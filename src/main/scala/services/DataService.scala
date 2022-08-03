@@ -2,6 +2,7 @@ package io.blindnet.dataaccess
 package services
 
 import objects.*
+import ws.packets.*
 
 import cats.effect.*
 import cats.effect.std.*
@@ -12,6 +13,6 @@ class DataService(connectorService: ConnectorService) {
   def get(q: DataQuery): IO[Unit] =
     for {
       conn <- connectorService.connection
-      _ <- conn.queue.offer("hey there yes you")
+      _ <- conn.send(DataQueryPacket(q, DataActions.Get))
     } yield ()
 }

@@ -1,6 +1,8 @@
 package io.blindnet.dataaccess
 package services
 
+import ws.WsConnection
+
 import cats.effect.*
 import cats.effect.std.*
 import fs2.*
@@ -11,11 +13,12 @@ class ConnectorService(connections: Ref[IO, List[WsConnection]]) {
     for {
       queue <- Queue.unbounded[IO, String]
       conn = WsConnection(queue)
-      _ <- connections.update(l => conn :: l)
-    } yield in => {
+      _ <- connections.update(l => conn :: Nil) // TODO don't keep only one conn
+    } yield (in: Stream[IO, String]) => {
       Stream.fromQueueUnterminated(queue, Int.MaxValue)
     }
 
+  // TODO by-connector tracking
   def connection: IO[WsConnection] =
     connections.get.map(_.head)
 }
@@ -24,5 +27,3 @@ object ConnectorService {
   def apply(): IO[ConnectorService] =
     Ref[IO].of[List[WsConnection]](Nil).map(ref => new ConnectorService(ref))
 }
-
-case class WsConnection(queue: Queue[IO, String])

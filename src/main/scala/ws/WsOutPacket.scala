@@ -1,6 +1,6 @@
 package io.blindnet.dataaccess
 package ws
 
-trait WsPacket {
+trait WsOutPacket {
   def typ: String
 }

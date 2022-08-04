@@ -16,6 +16,7 @@ class ConnectorService(connections: Ref[IO, List[WsConnection]]) {
       _ <- connections.update(l => conn :: Nil) // TODO don't keep only one conn
     } yield (in: Stream[IO, String]) => {
       Stream.fromQueueUnterminated(queue, Int.MaxValue)
+        .mergeHaltBoth(in.evalTap(conn.receive).drain)
     }
 
   // TODO by-connector tracking

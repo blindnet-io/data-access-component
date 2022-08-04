@@ -1,5 +1,5 @@
 package io.blindnet.dataaccess
-package ws.packets
+package ws.packets.out
 
 import io.circe.*
 
@@ -8,5 +8,6 @@ object DataActions extends Enumeration {
 
   val Get, Delete = Value
 }
+
 implicit val eDataActions: Encoder[DataActions.DataAction] =
   Encoder.encodeString.contramap[DataActions.Value](_.toString.toLowerCase)

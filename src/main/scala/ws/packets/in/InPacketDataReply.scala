@@ -8,7 +8,7 @@ import io.circe.*
 import io.circe.generic.semiauto.*
 
 case class InPacketDataReply(request_id: String, typ: DataReplies.DataReply) extends WsInPacket {
-  override def handle(): IO[Unit] = IO.println("got reply!")
+  override def handle(): IO[Unit] = IO.println("got reply! " + typ)
 }
 
 object InPacketDataReply {

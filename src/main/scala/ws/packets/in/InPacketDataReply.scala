@@ -7,8 +7,10 @@ import cats.effect.IO
 import io.circe.*
 import io.circe.generic.semiauto.*
 
+import java.nio.ByteBuffer
+
 case class InPacketDataReply(request_id: String, typ: DataReplies.DataReply) extends WsInPacket {
-  override def handle(): IO[Unit] = IO.println("got reply! " + typ)
+  override def handle(remaining: ByteBuffer): IO[Unit] = IO.println("got reply! " + typ)
 }
 
 object InPacketDataReply {

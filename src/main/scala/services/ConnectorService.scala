@@ -8,15 +8,17 @@ import cats.effect.std.*
 import fs2.*
 import fs2.concurrent.*
 
+import java.nio.ByteBuffer
+
 class ConnectorService(connections: Ref[IO, List[WsConnection]]) {
-  def ws(x: Unit): IO[Pipe[IO, String, String]] =
+  def ws(x: Unit): IO[Pipe[IO, Array[Byte], Array[Byte]]] =
     for {
-      queue <- Queue.unbounded[IO, String]
+      queue <- Queue.unbounded[IO, Array[Byte]]
       conn = WsConnection(queue)
       _ <- connections.update(l => conn :: Nil) // TODO don't keep only one conn
-    } yield (in: Stream[IO, String]) => {
+    } yield (in: Stream[IO, Array[Byte]]) => {
       Stream.fromQueueUnterminated(queue, Int.MaxValue)
-        .mergeHaltBoth(in.evalTap(conn.receive).drain)
+        .mergeHaltBoth(in.map(ByteBuffer.wrap).evalTap(conn.receive).drain)
     }
 
   // TODO by-connector tracking

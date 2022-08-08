@@ -6,8 +6,10 @@ import ws.packets.in.*
 import cats.effect.IO
 import io.circe.Decoder
 
+import java.nio.ByteBuffer
+
 trait WsInPacket {
-  def handle(): IO[Unit]
+  def handle(remaining: ByteBuffer): IO[Unit]
 }
 
 object WsInPacket {

@@ -6,6 +6,7 @@ import cats.effect.*
 import cats.implicits.*
 import dev.profunktor.redis4cats.*
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
+import io.blindnet.dataaccess.redis.QueryRepository
 import org.http4s.HttpApp
 import org.http4s.blaze.server.*
 import org.http4s.implicits.*
@@ -23,10 +24,11 @@ class ServerApp {
   val server: Resource[IO, Server] =
     for {
       redis <- Redis[IO].utf8("redis://localhost")
-      connectorService <- Resource.make(ConnectorService())(_ => IO.unit)
+      queryRepo = QueryRepository(redis)
+      connectorService <- Resource.make(ConnectorService(queryRepo))(_ => IO.unit)
       server <- BlazeServerBuilder[IO]
-        .bindHttp(8028, "127.0.0.1")
-        .withHttpWebSocketApp(app(ServicesRouter(redis, connectorService)))
+        .bindHttp(Env.get.port, Env.get.host)
+        .withHttpWebSocketApp(app(ServicesRouter(redis, queryRepo, connectorService)))
         .resource
     } yield server
 }

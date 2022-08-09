@@ -1,6 +1,7 @@
 package io.blindnet.dataaccess
 package services
 
+import redis.QueryRepository
 import ws.WsConnection
 
 import cats.effect.*
@@ -10,11 +11,11 @@ import fs2.concurrent.*
 
 import java.nio.ByteBuffer
 
-class ConnectorService(connections: Ref[IO, List[WsConnection]]) {
+class ConnectorService(queryRepo: QueryRepository, connections: Ref[IO, List[WsConnection]]) {
   def ws(x: Unit): IO[Pipe[IO, Array[Byte], Array[Byte]]] =
     for {
       queue <- Queue.unbounded[IO, Array[Byte]]
-      conn = WsConnection(queue)
+      conn = WsConnection(queryRepo, queue)
       _ <- connections.update(l => conn :: Nil) // TODO don't keep only one conn
     } yield (in: Stream[IO, Array[Byte]]) => {
       Stream.fromQueueUnterminated(queue, Int.MaxValue)
@@ -27,6 +28,6 @@ class ConnectorService(connections: Ref[IO, List[WsConnection]]) {
 }
 
 object ConnectorService {
-  def apply(): IO[ConnectorService] =
-    Ref[IO].of[List[WsConnection]](Nil).map(ref => new ConnectorService(ref))
+  def apply(queryRepo: QueryRepository): IO[ConnectorService] =
+    Ref[IO].of[List[WsConnection]](Nil).map(ref => new ConnectorService(queryRepo, ref))
 }

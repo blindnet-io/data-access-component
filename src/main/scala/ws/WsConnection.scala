@@ -1,6 +1,7 @@
 package io.blindnet.dataaccess
 package ws
 
+import redis.QueryRepository
 import ws.*
 import ws.packets.in.InPacketDataReply
 
@@ -13,7 +14,7 @@ import io.circe.syntax.*
 
 import java.nio.ByteBuffer
 
-case class WsConnection(queue: Queue[IO, Array[Byte]]) {
+case class WsConnection(queryRepo: QueryRepository, queue: Queue[IO, Array[Byte]]) {
   def receive(raw: ByteBuffer): IO[Unit] =
     def parsePacket[T <: WsInPacket](): Option[T] =
       val jsonLen = raw.getInt
@@ -30,7 +31,7 @@ case class WsConnection(queue: Queue[IO, Array[Byte]]) {
 
     for {
       _ <- parsePacket[WsInPacket]() match
-        case Some(packet) => packet.handle(raw)
+        case Some(packet) => packet.handle(this, raw)
         case None => IO.println("ignoring invalid WS packet")
     } yield ()
 

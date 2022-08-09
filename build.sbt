@@ -15,6 +15,7 @@ lazy val root = (project in file("."))
     organizationHomepage := Some(url("https://blindnet.io")),
     idePackagePrefix := Some("io.blindnet.dataaccess"),
     libraryDependencies ++= Seq(
+      "com.azure"                   %  "azure-storage-blob"              % "12.18.0",
       "com.softwaremill.sttp.tapir" %% "tapir-core"                      % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-http4s-server"             % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-json-circe"                % tapirVersion,

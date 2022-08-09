@@ -1,11 +1,11 @@
 package io.blindnet.dataaccess
 package redis
 
+import models.Query
 import objects.*
 
 import cats.effect.*
 import dev.profunktor.redis4cats.*
-import io.blindnet.dataaccess.models.Query
 import io.circe.*
 import io.circe.generic.auto.*
 import io.circe.parser.*

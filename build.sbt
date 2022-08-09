@@ -5,7 +5,7 @@ Test / fork := true
 
 val circeVersion = "0.14.2"
 val http4sVersion = "0.23.12"
-val tapirVersion = "1.0.0"
+val tapirVersion = "1.0.3"
 
 lazy val root = (project in file("."))
   .settings(
@@ -28,9 +28,9 @@ lazy val root = (project in file("."))
       "org.http4s"                  %% "http4s-circe"                    % http4sVersion,
       "org.scalatest"               %% "scalatest"                       % "3.2.12" % Test,
       "org.slf4j"                   %  "slf4j-simple"                    % "1.7.36",
-      "org.typelevel"               %% "cats-effect"                     % "3.3.12",
+      "org.typelevel"               %% "cats-effect"                     % "3.3.14",
       "org.typelevel"               %% "cats-effect-testing-scalatest"   % "1.4.0" % Test,
-      "org.typelevel"               %% "log4cats-slf4j"                  % "2.3.1",
+      "org.typelevel"               %% "log4cats-slf4j"                  % "2.4.0",
     ),
     assembly / mainClass := Some("io.blindnet.dataaccess.Main"),
     assembly / assemblyJarName := "data_access.jar",

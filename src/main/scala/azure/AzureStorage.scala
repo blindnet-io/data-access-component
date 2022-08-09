@@ -23,8 +23,6 @@ object AzureStorage {
 
   private val credential = StorageSharedKeyCredential(accountName, accountKey)
 
-  private def mkDate() = DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneOffset.UTC).format(Instant.now())
-
   private def buildBlobClient(blobId: String) =
     BlobClientBuilder()
       .endpoint(s"https://$accountName.blob.core.windows.net/$containerName/$blobId")
@@ -34,21 +32,15 @@ object AzureStorage {
   private def getBlobAppendOutputStream(blobId: String): IO[BlobOutputStream] =
     IO(buildBlobClient(blobId).getAppendBlobClient.getBlobOutputStream)
 
-  def signBlobDownload(blobId: String): IO[SignedBlobDownload] =
-    val date = mkDate()
-    AzureSAS.get(s"/$accountName/$containerName/$blobId")
-      .add("x-ms-date", date)
-      .add("x-ms-version", version)
-      .sign(credential)
-      .map(signature => SignedBlobDownload(
-        date,
-        s"https://$accountName.blob.core.windows.net/$containerName/$blobId",
-        s"SharedKey $accountName:$signature"
-      ))
+  private def getBlobInputStream(blobId: String): IO[BlobInputStream] =
+    IO(buildBlobClient(blobId).openInputStream())
 
   def createAppendBlob(blobId: String): IO[Unit] =
     IO(buildBlobClient(blobId).getAppendBlobClient.create())
 
-  def append(blobId: String): Pipe[IO, Byte, INothing] =
+  def append(blobId: String): Pipe[IO, Byte, Nothing] =
     writeOutputStream(getBlobAppendOutputStream(blobId))
+
+  def download(blobId: String): Stream[IO, Byte] =
+    readInputStream(getBlobInputStream(blobId), 1000)
 }

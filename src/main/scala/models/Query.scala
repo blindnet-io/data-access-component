@@ -5,10 +5,12 @@ import ws.packets.in.*
 
 import io.circe.*
 import io.circe.generic.semiauto.*
+import org.http4s.circe.*
+import org.http4s.Uri
 
 case class Query(
   id: String,
-  callback: String,
+  callback: Uri,
   reply: Option[DataReplies.DataReply] = None,
   dataPath: Option[String] = None,
 ) {

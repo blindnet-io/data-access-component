@@ -12,15 +12,17 @@ import org.http4s.server.websocket.WebSocketBuilder2
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 
 class ServicesRouter(redis: RedisCommands[IO, String, String], queryRepository: QueryRepository, connectorService: ConnectorService) {
-  
-  private val dataService = DataService(connectorService, queryRepository)
+  private val dataService = DataService(queryRepository)
+  private val requestService = RequestService(connectorService, queryRepository)
 
   private val connectorEndpoints = ConnectorEndpoints(connectorService)
   private val dataEndpoints = DataEndpoints(dataService)
+  private val requestEndpoints = RequestEndpoints(requestService)
 
   private val allEndpoints = List(
     connectorEndpoints.list,
     dataEndpoints.list,
+    requestEndpoints.list,
   ).flatten
 
   val routes: WebSocketBuilder2[IO] => HttpRoutes[IO] =

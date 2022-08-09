@@ -10,6 +10,7 @@ import io.circe.*
 import io.circe.generic.auto.*
 import io.circe.parser.*
 import io.circe.syntax.*
+import org.http4s.circe.*
 
 class QueryRepository(redis: RedisCommands[IO, String, String]) {
   def get(id: String): IO[Option[Query]] =

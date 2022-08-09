@@ -24,6 +24,7 @@ lazy val root = (project in file("."))
       "io.circe"                    %% "circe-core"                      % circeVersion,
       "io.circe"                    %% "circe-generic"                   % circeVersion,
       "io.circe"                    %% "circe-literal"                   % circeVersion % Test,
+      "org.http4s"                  %% "http4s-blaze-client"             % http4sVersion,
       "org.http4s"                  %% "http4s-blaze-server"             % http4sVersion,
       "org.http4s"                  %% "http4s-circe"                    % http4sVersion,
       "org.scalatest"               %% "scalatest"                       % "3.2.12" % Test,

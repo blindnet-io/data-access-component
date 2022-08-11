@@ -31,7 +31,7 @@ case class InPacketData(request_id: String, last: Boolean) extends WsInPacket {
       _ <- if last then BlazeClientBuilder[IO].resource.use(_.successful(Request[IO](
           Method.POST,
           query.callback,
-        ).withEntity(DataCallback(query.id, true, Some(s"${Env.get.baseUrl}/data/$request_id/$dataPath")))))
+        ).withEntity(DataCallback(query.id, true, Some(s"v1/${Env.get.baseUrl}/data/$request_id/$dataPath")))))
         else IO.println("some other data should follow")
     } yield ()
 }

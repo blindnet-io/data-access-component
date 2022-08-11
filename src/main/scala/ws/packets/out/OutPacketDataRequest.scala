@@ -8,8 +8,8 @@ import io.blindnet.dataaccess.models.DataRequestActions
 import io.circe.*
 import io.circe.generic.semiauto.*
 
-case class OutPacketDataRequest(query: DataRequestPayload, action: DataRequestActions.DataRequestAction) extends WsOutPacket {
-  override def typ: String = "data_query"
+case class OutPacketDataRequest(request: DataRequestPayload) extends WsOutPacket {
+  override def typ: String = "data_request"
 }
 
 implicit val eOutPacketDataQuery: Encoder[OutPacketDataRequest] = deriveEncoder[OutPacketDataRequest]

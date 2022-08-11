@@ -14,14 +14,13 @@ import sttp.tapir.json.circe.*
 class RequestEndpoints(service: RequestService) {
   private val base = endpoint.tag("Requests").in("requests")
 
-  val get: ApiEndpoint =
-    base.summary("Create a GET request")
+  val create: ApiEndpoint =
+    base.summary("Create a data request")
       .post
-      .in("get")
       .in(jsonBody[DataRequestPayload])
-      .serverLogicSuccess(service.get)
+      .serverLogicSuccess(service.create)
 
   val list: List[ApiEndpoint] = List(
-    get
+    create
   )
 }

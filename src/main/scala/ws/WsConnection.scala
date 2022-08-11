@@ -3,7 +3,6 @@ package ws
 
 import redis.DataRequestRepository
 import ws.*
-import ws.packets.in.InPacketDataReply
 
 import cats.data.*
 import cats.effect.*

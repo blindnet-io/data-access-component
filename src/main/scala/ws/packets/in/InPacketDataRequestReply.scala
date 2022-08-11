@@ -13,7 +13,7 @@ import io.circe.generic.semiauto.*
 
 import java.nio.ByteBuffer
 
-case class InPacketDataReply(request_id: String, typ: DataRequestReplies.DataRequestReply) extends WsInPacket {
+case class InPacketDataRequestReply(request_id: String, typ: DataRequestReplies.DataRequestReply) extends WsInPacket {
   implicit val uuidGen: UUIDGen[IO] = UUIDGen.fromSync
 
   override def handle(conn: WsConnection, remaining: ByteBuffer): IO[Unit] = for {
@@ -29,7 +29,7 @@ case class InPacketDataReply(request_id: String, typ: DataRequestReplies.DataReq
   } yield ()
 }
 
-object InPacketDataReply {
-  implicit val decoder: Decoder[InPacketDataReply] =
-    Decoder.forProduct2("request_id", "type")(InPacketDataReply.apply)
+object InPacketDataRequestReply {
+  implicit val decoder: Decoder[InPacketDataRequestReply] =
+    Decoder.forProduct2("request_id", "type")(InPacketDataRequestReply.apply)
 }

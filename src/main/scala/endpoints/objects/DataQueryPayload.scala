@@ -1,9 +1,9 @@
 package io.blindnet.dataaccess
-package objects
+package endpoints.objects
 
 import java.time.Instant
 
-case class DataQuery(
+case class DataQueryPayload(
   selectors: List[String], // empty = everything
   subjects: List[String],
   provenance: Option[String],
@@ -11,8 +11,4 @@ case class DataQuery(
   target: Option[String],
   after: Option[Instant],
   until: Option[Instant],
-
-//  app_id: String,
-  request_id: String,
-  callback: String,
 )

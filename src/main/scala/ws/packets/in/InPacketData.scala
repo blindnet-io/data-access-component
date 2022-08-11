@@ -2,12 +2,12 @@ package io.blindnet.dataaccess
 package ws.packets.in
 
 import azure.AzureStorage
+import endpoints.objects.DataCallbackPayload
 import errors.*
-import fs2.Stream
-import objects.*
 import ws.{WsConnection, WsInPacket}
 
 import cats.effect.IO
+import fs2.Stream
 import io.circe.*
 import io.circe.generic.semiauto.*
 import org.http4s.*
@@ -25,13 +25,13 @@ case class InPacketData(request_id: String, last: Boolean) extends WsInPacket {
     for {
       _ <- IO.println("got data! len=" + data.length)
       query <- conn.queryRepo.get(request_id).orNotFound
-      dataPath <- query.dataPath.orBadRequest("request has not been accepted")
+      dataPath <- query.dataId.orBadRequest("request has not been accepted")
       _ <- Stream(data: _*).covary[IO].through(AzureStorage.append(dataPath)).compile.drain
       _ <- IO.println("uploaded block")
       _ <- if last then BlazeClientBuilder[IO].resource.use(_.successful(Request[IO](
           Method.POST,
           query.callback,
-        ).withEntity(DataCallback(query.id, true, Some(s"v1/${Env.get.baseUrl}/data/$request_id/$dataPath")))))
+        ).withEntity(DataCallbackPayload(query.id, true, Some(s"v1/${Env.get.baseUrl}/data/$request_id/$dataPath")))))
         else IO.println("some other data should follow")
     } yield ()
 }

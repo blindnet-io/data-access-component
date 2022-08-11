@@ -1,7 +1,6 @@
 package io.blindnet.dataaccess
 package endpoints
 
-import objects.*
 import services.DataService
 
 import cats.effect.IO

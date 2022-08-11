@@ -1,7 +1,7 @@
 package io.blindnet.dataaccess
 package services
 
-import redis.QueryRepository
+import redis.DataRequestRepository
 import ws.WsConnection
 
 import cats.effect.*
@@ -11,7 +11,7 @@ import fs2.concurrent.*
 
 import java.nio.ByteBuffer
 
-class ConnectorService(queryRepo: QueryRepository, connections: Ref[IO, List[WsConnection]]) {
+class ConnectorService(queryRepo: DataRequestRepository, connections: Ref[IO, List[WsConnection]]) {
   def ws(x: Unit): IO[Pipe[IO, Array[Byte], Array[Byte]]] =
     for {
       queue <- Queue.unbounded[IO, Array[Byte]]
@@ -28,6 +28,6 @@ class ConnectorService(queryRepo: QueryRepository, connections: Ref[IO, List[WsC
 }
 
 object ConnectorService {
-  def apply(queryRepo: QueryRepository): IO[ConnectorService] =
+  def apply(queryRepo: DataRequestRepository): IO[ConnectorService] =
     Ref[IO].of[List[WsConnection]](Nil).map(ref => new ConnectorService(queryRepo, ref))
 }

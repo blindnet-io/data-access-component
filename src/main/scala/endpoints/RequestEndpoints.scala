@@ -18,7 +18,7 @@ class RequestEndpoints(service: RequestService) {
     base.summary("Create a GET request")
       .post
       .in("get")
-      .in(jsonBody[DataQuery])
+      .in(jsonBody[DataRequestPayload])
       .serverLogicSuccess(service.get)
 
   val list: List[ApiEndpoint] = List(

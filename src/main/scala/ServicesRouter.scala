@@ -11,7 +11,7 @@ import org.http4s.server.middleware.CORS
 import org.http4s.server.websocket.WebSocketBuilder2
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 
-class ServicesRouter(redis: RedisCommands[IO, String, String], queryRepository: QueryRepository, connectorService: ConnectorService) {
+class ServicesRouter(redis: RedisCommands[IO, String, String], queryRepository: DataRequestRepository, connectorService: ConnectorService) {
   private val dataService = DataService(queryRepository)
   private val requestService = RequestService(connectorService, queryRepository)
 

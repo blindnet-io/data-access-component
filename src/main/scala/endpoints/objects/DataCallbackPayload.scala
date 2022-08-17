@@ -7,7 +7,7 @@ import io.circe.generic.semiauto.*
 case class DataCallbackPayload(
   request_id: String,
   accepted: Boolean,
-  data_url: Option[String],
+  data_url: Option[String] = None,
 )
 
 object DataCallbackPayload {

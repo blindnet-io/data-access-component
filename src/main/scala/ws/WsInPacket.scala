@@ -14,7 +14,6 @@ trait WsInPacket {
 
 object WsInPacket {
   val decoders: Map[String, Decoder[_ <: WsInPacket]] = Map(
-    "data" -> InPacketData.decoder,
     "data_request_reply" -> InPacketDataRequestReply.decoder,
   )
 }

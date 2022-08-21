@@ -17,6 +17,7 @@ class DataService(queryRepository: DataRequestRepository) {
   def get(requestId: String, dataId: String): IO[Stream[IO, Byte]] =
     for {
       request <- queryRepository.get(requestId).orBadRequest("Request not found")
-      _ <- request.dataId.contains(dataId).orBadRequest("Data not found")
+      _ <- (request.dataId.contains(dataId) || request.additionalDataIds.contains(dataId))
+        .orBadRequest("Data not found")
     } yield AzureStorage.download(dataId)
 }

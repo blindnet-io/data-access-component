@@ -23,7 +23,7 @@ class ServerApp {
 
   val server: Resource[IO, Server] =
     for {
-      redis <- Redis[IO].utf8("redis://localhost")
+      redis <- Redis[IO].utf8("redis://127.0.0.1")
       queryRepo = DataRequestRepository(redis)
       connectorService <- Resource.make(ConnectorService(queryRepo))(_ => IO.unit)
       server <- BlazeServerBuilder[IO]

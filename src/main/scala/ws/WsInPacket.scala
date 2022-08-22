@@ -9,7 +9,7 @@ import io.circe.Decoder
 import java.nio.ByteBuffer
 
 trait WsInPacket {
-  def handle(conn: WsConnection, remaining: ByteBuffer): IO[Unit]
+  def handle(conn: WsConnection): IO[Unit]
 }
 
 object WsInPacket {

@@ -13,16 +13,11 @@ import io.circe.syntax.*
 
 import java.nio.ByteBuffer
 
-case class WsConnection(repos: Repositories, queue: Queue[IO, Array[Byte]]) {
-  def receive(raw: ByteBuffer): IO[Unit] =
+case class WsConnection(repos: Repositories, queue: Queue[IO, String]) {
+  def receive(raw: String): IO[Unit] =
     def parsePacket[T <: WsInPacket](): Option[T] =
-      val jsonLen = raw.getInt
-      val jsonBytes = new Array[Byte](jsonLen)
-      raw.get(jsonBytes)
-      val json = String(jsonBytes)
-
       for {
-        payload <- parse(json).toOption.flatMap(_.asObject)
+        payload <- parse(raw).toOption.flatMap(_.asObject)
         typ <- payload("typ").flatMap(_.asString)
         decoder <- WsInPacket.decoders.get(typ)
         packet <- payload("data").flatMap(_.as[T](decoder.asInstanceOf[Decoder[T]]).toOption)
@@ -30,10 +25,10 @@ case class WsConnection(repos: Repositories, queue: Queue[IO, Array[Byte]]) {
 
     for {
       _ <- parsePacket[WsInPacket]() match
-        case Some(packet) => packet.handle(this, raw)
+        case Some(packet) => packet.handle(this)
         case None => IO.println("ignoring invalid WS packet")
     } yield ()
 
-  def send[T <: WsOutPacket](payload: T)(implicit enc: Encoder[T]): IO[Unit] =
-    queue.offer(WsOutPayload(payload).asJson.noSpaces.getBytes)
+  def send[T <: WsOutPacket](packet: T)(implicit enc: Encoder[T]): IO[Unit] =
+    queue.offer(WsOutPayload(packet).asJson.noSpaces)
 }

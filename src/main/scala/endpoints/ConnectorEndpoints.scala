@@ -15,7 +15,7 @@ class ConnectorEndpoints(service: ConnectorService) {
     base.summary("Establish WebSocket connection")
       .get
       .in("ws")
-      .out(webSocketBody[Array[Byte], CodecFormat.OctetStream, Array[Byte], CodecFormat.OctetStream](Fs2Streams[IO]))
+      .out(webSocketBody[String, CodecFormat.TextPlain, String, CodecFormat.TextPlain](Fs2Streams[IO]))
       .serverLogicSuccess(service.ws)
 
   val sendMainData: ApiEndpoint =

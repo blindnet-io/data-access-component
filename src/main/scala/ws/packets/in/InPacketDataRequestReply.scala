@@ -18,7 +18,7 @@ import org.http4s.circe.CirceEntityEncoder.*
 import java.nio.ByteBuffer
 
 case class InPacketDataRequestReply(request_id: String, typ: DataRequestReply) extends WsInPacket {
-  override def handle(conn: WsConnection, remaining: ByteBuffer): IO[Unit] = for {
+  override def handle(conn: WsConnection): IO[Unit] = for {
     _ <- IO.println("got reply! " + typ)
     query <- conn.repos.dataRequests.get(request_id).orNotFound.flatMap(q =>
       if typ == DataRequestReply.ACCEPT then IO.pure(q.copy(reply = Some(typ)))

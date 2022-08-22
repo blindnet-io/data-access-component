@@ -20,14 +20,14 @@ import java.nio.ByteBuffer
 class ConnectorService(repos: Repositories, connectionRef: Ref[IO, Option[WsConnection]]) {
   implicit val uuidGen: UUIDGen[IO] = UUIDGen.fromSync
 
-  def ws(x: Unit): IO[Pipe[IO, Array[Byte], Array[Byte]]] =
+  def ws(x: Unit): IO[Pipe[IO, String, String]] =
     for {
-      queue <- Queue.unbounded[IO, Array[Byte]]
+      queue <- Queue.unbounded[IO, String]
       conn = WsConnection(repos, queue)
       _ <- connectionRef.update(_ => Some(conn))
-    } yield (in: Stream[IO, Array[Byte]]) => {
+    } yield (in: Stream[IO, String]) => {
       Stream.fromQueueUnterminated(queue, Int.MaxValue)
-        .mergeHaltBoth(in.map(ByteBuffer.wrap).evalTap(conn.receive).drain)
+        .mergeHaltBoth(in.evalTap(conn.receive).drain)
     }
 
   def sendMainData(requestId: String, last: Boolean, data: Stream[IO, Byte]): IO[Unit] =

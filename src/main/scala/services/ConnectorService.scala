@@ -18,14 +18,14 @@ import org.http4s.circe.CirceEntityEncoder.*
 
 import java.nio.ByteBuffer
 
-class ConnectorService(queryRepo: DataRequestRepository, connections: Ref[IO, List[WsConnection]]) {
+class ConnectorService(queryRepo: DataRequestRepository, connectionRef: Ref[IO, Option[WsConnection]]) {
   implicit val uuidGen: UUIDGen[IO] = UUIDGen.fromSync
 
   def ws(x: Unit): IO[Pipe[IO, Array[Byte], Array[Byte]]] =
     for {
       queue <- Queue.unbounded[IO, Array[Byte]]
       conn = WsConnection(queryRepo, queue)
-      _ <- connections.update(l => conn :: Nil) // TODO don't keep only one conn
+      _ <- connectionRef.update(_ => Some(conn))
     } yield (in: Stream[IO, Array[Byte]]) => {
       Stream.fromQueueUnterminated(queue, Int.MaxValue)
         .mergeHaltBoth(in.map(ByteBuffer.wrap).evalTap(conn.receive).drain)
@@ -56,12 +56,11 @@ class ConnectorService(queryRepo: DataRequestRepository, connections: Ref[IO, Li
       _ <- data.through(AzureStorage.append(dataId)).compile.drain
     } yield request.dataUrl(dataId)
 
-  // TODO by-connector tracking
   def connection: IO[WsConnection] =
-    connections.get.map(_.head)
+    connectionRef.get.map(_.get)
 }
 
 object ConnectorService {
   def apply(queryRepo: DataRequestRepository): IO[ConnectorService] =
-    Ref[IO].of[List[WsConnection]](Nil).map(ref => new ConnectorService(queryRepo, ref))
+    Ref[IO].of[Option[WsConnection]](None).map(ref => new ConnectorService(queryRepo, ref))
 }

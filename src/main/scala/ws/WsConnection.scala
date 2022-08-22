@@ -13,7 +13,7 @@ import io.circe.syntax.*
 
 import java.nio.ByteBuffer
 
-case class WsConnection(queryRepo: DataRequestRepository, queue: Queue[IO, Array[Byte]]) {
+case class WsConnection(repos: Repositories, queue: Queue[IO, Array[Byte]]) {
   def receive(raw: ByteBuffer): IO[Unit] =
     def parsePacket[T <: WsInPacket](): Option[T] =
       val jsonLen = raw.getInt

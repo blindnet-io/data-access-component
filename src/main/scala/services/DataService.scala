@@ -13,10 +13,10 @@ import fs2.*
 import fs2.concurrent.*
 import org.http4s.Uri
 
-class DataService(queryRepository: DataRequestRepository) {
+class DataService(repos: Repositories) {
   def get(requestId: String, dataId: String): IO[Stream[IO, Byte]] =
     for {
-      request <- queryRepository.get(requestId).orBadRequest("Request not found")
+      request <- repos.dataRequests.get(requestId).orBadRequest("Request not found")
       _ <- (request.dataId.contains(dataId) || request.additionalDataIds.contains(dataId))
         .orBadRequest("Data not found")
     } yield AzureStorage.download(dataId)

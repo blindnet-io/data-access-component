@@ -1,7 +1,6 @@
 package io.blindnet.dataaccess
 
 import endpoints.*
-import redis.*
 import services.*
 
 import cats.effect.IO
@@ -13,9 +12,9 @@ import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.SwaggerUIOptions
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
-class ServicesRouter(redis: RedisCommands[IO, String, String], queryRepository: DataRequestRepository, connectorService: ConnectorService) {
-  private val dataService = DataService(queryRepository)
-  private val requestService = RequestService(connectorService, queryRepository)
+class Services(repos: Repositories, connectorService: ConnectorService) {
+  private val dataService = DataService(repos)
+  private val requestService = RequestService(connectorService, repos)
 
   private val connectorEndpoints = ConnectorEndpoints(connectorService)
   private val dataEndpoints = DataEndpoints(dataService)
@@ -32,4 +31,8 @@ class ServicesRouter(redis: RedisCommands[IO, String, String], queryRepository: 
 
   val routes: WebSocketBuilder2[IO] => HttpRoutes[IO] =
     Http4sServerInterpreter[IO]().toWebSocketRoutes(apiEndpoints ++ swaggerEndpoints)
+}
+
+object Services {
+  def apply(repos: Repositories): IO[Services] = ConnectorService(repos).map(new Services(repos, _))
 }

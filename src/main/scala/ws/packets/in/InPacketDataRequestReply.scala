@@ -20,7 +20,7 @@ import java.nio.ByteBuffer
 case class InPacketDataRequestReply(request_id: String, typ: DataRequestReply) extends WsInPacket {
   override def handle(conn: WsConnection, remaining: ByteBuffer): IO[Unit] = for {
     _ <- IO.println("got reply! " + typ)
-    query <- conn.queryRepo.get(request_id).orNotFound.flatMap(q =>
+    query <- conn.repos.dataRequests.get(request_id).orNotFound.flatMap(q =>
       if typ == DataRequestReply.ACCEPT then IO.pure(q.copy(reply = Some(typ)))
       else for {
         _ <- BlazeClientBuilder[IO].resource.use(_.successful(Request[IO](
@@ -28,7 +28,7 @@ case class InPacketDataRequestReply(request_id: String, typ: DataRequestReply) e
             q.callback,
           ).withEntity(DataCallbackPayload(q.id, false))))
       } yield q.copy(reply = Some(typ)))
-    _ <- conn.queryRepo.set(query)
+    _ <- conn.repos.dataRequests.set(query)
     _ <- IO.println(query)
   } yield ()
 }

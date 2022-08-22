@@ -4,7 +4,7 @@ package services
 import azure.AzureStorage
 import endpoints.objects.DataCallbackPayload
 import errors.*
-import models.DataRequestReplies
+import models.DataRequestReply
 import redis.DataRequestRepository
 import ws.WsConnection
 
@@ -37,7 +37,7 @@ class ConnectorService(queryRepo: DataRequestRepository, connections: Ref[IO, Li
       dataId <- request.dataId.map(IO.pure).getOrElse(for {
         dataId <- UUIDGen.randomString
         _ <- AzureStorage.createAppendBlob(dataId)
-        _ <- queryRepo.set(request.copy(reply = Some(DataRequestReplies.Accept), dataId = Some(dataId)))
+        _ <- queryRepo.set(request.copy(reply = Some(DataRequestReply.ACCEPT), dataId = Some(dataId)))
       } yield dataId)
       _ <- data.through(AzureStorage.append(dataId)).compile.drain
       _ <- if last then BlazeClientBuilder[IO].resource.use(_.successful(Request[IO](

@@ -1,10 +1,10 @@
 package io.blindnet.dataaccess
 package ws.packets.out
 
+import endpoints.objects.DataRequestPayload
+import models.DataRequestAction
 import ws.WsOutPacket
 
-import io.blindnet.dataaccess.endpoints.objects.DataRequestPayload
-import io.blindnet.dataaccess.models.DataRequestActions
 import io.circe.*
 import io.circe.generic.semiauto.*
 

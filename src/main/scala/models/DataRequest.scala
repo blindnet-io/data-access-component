@@ -3,14 +3,14 @@ package models
 
 import io.circe.*
 import io.circe.generic.semiauto.*
-import org.http4s.circe.*
 import org.http4s.Uri
+import org.http4s.circe.*
 
 case class DataRequest(
   id: String,
-  action: DataRequestActions.DataRequestAction,
+  action: DataRequestAction,
   callback: Uri,
-  reply: Option[DataRequestReplies.DataRequestReply] = None,
+  reply: Option[DataRequestReply] = None,
   dataId: Option[String] = None,
   additionalDataIds: List[String] = Nil,
 ) {

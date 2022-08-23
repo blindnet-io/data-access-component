@@ -4,6 +4,7 @@ package services
 import azure.AzureStorage
 import endpoints.objects.DataCallbackPayload
 import errors.*
+import models.DataRequestAction
 import models.DataRequestReply
 import ws.WsConnection
 
@@ -13,7 +14,6 @@ import fs2.*
 import fs2.concurrent.*
 import org.http4s.*
 import org.http4s.blaze.client.*
-import org.http4s.circe.CirceEntityEncoder.*
 
 import java.nio.ByteBuffer
 
@@ -33,17 +33,17 @@ class ConnectorService(repos: Repositories, connectionRef: Ref[IO, Option[WsConn
   def sendMainData(requestId: String, last: Boolean, data: Stream[IO, Byte]): IO[Unit] =
     for {
       request <- repos.dataRequests.get(requestId).orBadRequest("Request not found")
-      dataId <- request.dataId.map(IO.pure).getOrElse(for {
-        dataId <- UUIDGen.randomString
-        _ <- AzureStorage.createAppendBlob(dataId)
-        _ <- repos.dataRequests.set(request.copy(reply = Some(DataRequestReply.ACCEPT), dataId = Some(dataId)))
-      } yield dataId)
-      _ <- data.through(AzureStorage.append(dataId)).compile.drain
-      _ <- if last then BlazeClientBuilder[IO].resource.use(_.successful(Request[IO](
-        Method.POST,
-        request.callback,
-      ).withEntity(DataCallbackPayload(request.id, true, Some(request.dataUrl(dataId))))))
-      else IO.println("some other data should follow")
+        .flatMap(req => req.dataId match
+          case Some(value) => IO.pure(req)
+          case None => for {
+            _ <- (req.action == DataRequestAction.GET).orBadRequest("Request is not GET")
+            dataId <- UUIDGen.randomString
+            newReq = req.copy(reply = Some(DataRequestReply.ACCEPT), dataId = Some(dataId))
+            _ <- AzureStorage.createAppendBlob(dataId)
+            _ <- repos.dataRequests.set(newReq)
+          } yield newReq)
+      _ <- data.through(AzureStorage.append(request.dataId.get)).compile.drain
+      _ <- request.tryCallback(repos, last)
     } yield ()
 
   def sendAdditionalData(requestId: String, data: Stream[IO, Byte]): IO[String] =

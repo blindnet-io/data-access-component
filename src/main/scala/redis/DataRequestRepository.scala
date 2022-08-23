@@ -18,6 +18,9 @@ class DataRequestRepository(redis: RedisCommands[IO, String, String]) {
   def set(query: DataRequest): IO[Unit] =
     redis.hSet("data_requests", query.id, query.asJson.noSpaces).void
 
+  def delete(id: String): IO[Unit] =
+    redis.hDel("data_requests", id).void
+
   private def parseJson(json: String): DataRequest =
     parse(json).toOption.get.as[DataRequest].toOption.get
 

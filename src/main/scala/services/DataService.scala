@@ -18,6 +18,6 @@ import scala.util.matching.Regex
 class DataService(repos: Repositories) {
   val dataIdPattern: Regex = "\\.\\w+$".r
 
-  def get(requestId: String, dataId: String): IO[Stream[IO, Byte]] =
-    IO(AzureStorage.download(dataIdPattern.replaceFirstIn(dataId, "")))
+  def get(appId: String, requestId: String, dataId: String): IO[Stream[IO, Byte]] =
+    IO(AzureStorage.download(s"$appId/$requestId/${dataIdPattern.replaceFirstIn(dataId, "")}"))
 }

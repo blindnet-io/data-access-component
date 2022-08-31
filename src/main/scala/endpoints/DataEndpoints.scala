@@ -17,7 +17,7 @@ class DataEndpoints(service: DataService) {
   val get: ApiEndpoint =
     base.summary("Get data")
       .get
-      .in(path[String]("request_id") / path[String]("data_id"))
+      .in(path[String]("app_id") / path[String]("request_id") / path[String]("data_id"))
       .out(streamBinaryBody(Fs2Streams[IO])(CodecFormat.OctetStream()))
       .out(header(HeaderNames.ContentDisposition, "attachment"))
       .serverLogicSuccess(service.get)

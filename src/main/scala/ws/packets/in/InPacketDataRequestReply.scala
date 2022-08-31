@@ -19,7 +19,7 @@ import java.nio.ByteBuffer
 
 case class InPacketDataRequestReply(request_id: String, typ: DataRequestReply) extends WsInPacket {
   override def handle(conn: WsConnection): IO[Unit] = for {
-    request <- conn.repos.dataRequests.get(request_id).orNotFound
+    request <- conn.repos.dataRequests.get(conn.appId, request_id).orNotFound
       .map(_.copy(reply = Some(typ)))
     _ <- conn.repos.dataRequests.set(request)
     _ <- request.tryCallback(conn.repos)

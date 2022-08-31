@@ -12,14 +12,14 @@ import io.circe.syntax.*
 import org.http4s.circe.*
 
 class DataRequestRepository(redis: RedisCommands[IO, String, String]) {
-  def get(id: String): IO[Option[DataRequest]] =
-    redis.hGet("data_requests", id).map(parseJson)
+  def get(appId: String, id: String): IO[Option[DataRequest]] =
+    redis.hGet(s"data_requests:$appId", id).map(parseJson)
 
   def set(query: DataRequest): IO[Unit] =
-    redis.hSet("data_requests", query.id, query.asJson.noSpaces).void
+    redis.hSet(s"data_requests:${query.appId}", query.id, query.asJson.noSpaces).void
 
-  def delete(id: String): IO[Unit] =
-    redis.hDel("data_requests", id).void
+  def delete(appId: String, id: String): IO[Unit] =
+    redis.hDel(s"data_requests:$appId", id).void
 
   private def parseJson(json: String): DataRequest =
     parse(json).toOption.get.as[DataRequest].toOption.get

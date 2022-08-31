@@ -12,6 +12,7 @@ import org.http4s.circe.*
 import org.http4s.circe.CirceEntityEncoder.*
 
 case class DataRequest(
+  appId: String,
   id: String,
   action: DataRequestAction,
   callback: Uri,
@@ -19,7 +20,8 @@ case class DataRequest(
   dataId: Option[String] = None,
   additionalDataIds: List[String] = Nil,
 ) {
-  def dataUrl(dataId: String) = s"${Env.get.baseUrl}/v1/data/$id/$dataId"
+  def dataPath(dataId: String) = s"$appId/$id/$dataId"
+  def dataUrl(dataId: String) = s"${Env.get.baseUrl}/v1/data/${dataPath(dataId)}"
 
   def hasCompleteReply(mainDataSent: Boolean): Boolean =
     reply.isDefined && (action == DataRequestAction.DELETE ||
@@ -36,8 +38,8 @@ case class DataRequest(
       _ <- BlazeClientBuilder[IO].resource.use(_.successful(Request[IO](
         Method.POST,
         callback,
-      ).withEntity(DataCallbackPayload(id, reply.get == DataRequestReply.ACCEPT, dataId.map(dataUrl)))))
-      _ <- repos.dataRequests.delete(id)
+      ).withEntity(DataCallbackPayload(appId, id, reply.get == DataRequestReply.ACCEPT, dataId.map(dataUrl)))))
+      _ <- repos.dataRequests.delete(appId, id)
     } yield ()
     else IO.unit
 }

@@ -14,14 +14,14 @@ class ConnectorEndpoints(service: ConnectorService) {
   val ws: ApiEndpoint =
     base.summary("Establish WebSocket connection")
       .get
-      .in("ws")
+      .in("ws" / path[String]("app_id"))
       .out(webSocketBody[String, CodecFormat.TextPlain, String, CodecFormat.TextPlain](Fs2Streams[IO]))
       .serverLogicSuccess(service.ws)
 
   val sendMainData: ApiEndpoint =
     base.summary("Send main data")
       .post
-      .in("data" / path[String]("request_id") / "main")
+      .in("data" / path[String]("app_id") / path[String]("request_id") / "main")
       .in(query[Boolean]("last"))
       .in(streamBinaryBody(Fs2Streams[IO])(CodecFormat.OctetStream()))
       .serverLogicSuccess(service.sendMainData)
@@ -29,7 +29,7 @@ class ConnectorEndpoints(service: ConnectorService) {
   val sendAdditionalData: ApiEndpoint =
     base.summary("Send additional data")
       .post
-      .in("data" / path[String]("request_id") / "additional")
+      .in("data" / path[String]("app_id") / path[String]("request_id") / "additional")
       .in(streamBinaryBody(Fs2Streams[IO])(CodecFormat.OctetStream()))
       .out(jsonBody[String])
       .serverLogicSuccess(service.sendAdditionalData)

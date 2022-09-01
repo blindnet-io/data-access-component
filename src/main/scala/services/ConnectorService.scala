@@ -6,7 +6,7 @@ import endpoints.objects.DataCallbackPayload
 import errors.*
 import models.DataRequestAction
 import models.DataRequestReply
-import ws.WsConnection
+import ws.{WsConnection, WsConnTracker}
 
 import cats.effect.*
 import cats.effect.std.*
@@ -17,14 +17,14 @@ import org.http4s.blaze.client.*
 
 import java.nio.ByteBuffer
 
-class ConnectorService(repos: Repositories, state: Ref[IO, Map[String, WsConnection]]) {
+class ConnectorService(repos: Repositories, state: Ref[IO, Map[String, WsConnTracker]]) {
   implicit val uuidGen: UUIDGen[IO] = UUIDGen.fromSync
 
   def ws(appId: String): IO[Pipe[IO, String, String]] =
     for {
       queue <- Queue.unbounded[IO, String]
       conn = WsConnection(repos, appId, queue)
-      _ <- state.update(_ + (appId -> conn))
+      _ <- addConnection(appId, conn)
     } yield (in: Stream[IO, String]) => {
       Stream.fromQueueUnterminated(queue, Int.MaxValue)
         .mergeHaltBoth(in.evalTap(conn.receive).drain)
@@ -55,11 +55,25 @@ class ConnectorService(repos: Repositories, state: Ref[IO, Map[String, WsConnect
       _ <- data.through(AzureStorage.append(request.dataPath(dataId))).compile.drain
     } yield request.dataUrl(dataId)
 
+  private def tracker(appId: String): IO[WsConnTracker] =
+    for {
+      existing <- state.get.map(_.get(appId))
+      tracker <- existing match
+        case Some(value) => IO.pure(value)
+        case None => {
+          val newTracker = WsConnTracker()
+          state.update(_ + (appId -> newTracker)).as(newTracker)
+        }
+    } yield tracker
+
+  private def addConnection(appId: String, conn: WsConnection): IO[Unit] =
+    tracker(appId).map(_.add(conn)).flatMap(newTracker => state.update(_ + (appId -> newTracker)))
+
   def connection(appId: String): IO[WsConnection] =
-    state.get.map(_(appId))
+    tracker(appId).map(_.get.get)
 }
 
 object ConnectorService {
   def apply(repos: Repositories): IO[ConnectorService] =
-    Ref[IO].of[Map[String, WsConnection]](Map.empty).map(new ConnectorService(repos, _))
+    Ref[IO].of[Map[String, WsConnTracker]](Map.empty).map(new ConnectorService(repos, _))
 }

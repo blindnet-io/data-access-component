@@ -6,6 +6,7 @@ import services.DataService
 import cats.effect.IO
 import io.circe.generic.auto.*
 import sttp.capabilities.fs2.Fs2Streams
+import sttp.model.HeaderNames
 import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
@@ -18,6 +19,7 @@ class DataEndpoints(service: DataService) {
       .get
       .in(path[String]("request_id") / path[String]("data_id"))
       .out(streamBinaryBody(Fs2Streams[IO])(CodecFormat.OctetStream()))
+      .out(header(HeaderNames.ContentDisposition, "attachment"))
       .serverLogicSuccess(service.get)
 
   val list: List[ApiEndpoint] = List(

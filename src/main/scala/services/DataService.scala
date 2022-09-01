@@ -13,7 +13,11 @@ import fs2.*
 import fs2.concurrent.*
 import org.http4s.Uri
 
+import scala.util.matching.Regex
+
 class DataService(repos: Repositories) {
+  val dataIdPattern: Regex = "\\.\\w+$".r
+
   def get(requestId: String, dataId: String): IO[Stream[IO, Byte]] =
-    IO(AzureStorage.download(dataId))
+    IO(AzureStorage.download(dataIdPattern.replaceFirstIn(dataId, "")))
 }

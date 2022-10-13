@@ -14,12 +14,12 @@ import fs2.concurrent.*
 import org.http4s.Uri
 
 class RequestService(connectorService: ConnectorService, repos: Repositories) {
-  def create(q: DataRequestPayload): IO[Unit] =
+  def create(app: App)(q: DataRequestPayload): IO[Unit] =
     for {
       callback <- Uri.fromString(q.callback).toOption.orBadRequest("Invalid callback")
-      _ <- repos.dataRequests.get(q.app_id, q.request_id).thenBadRequest("Request already exists")
-      _ <- repos.dataRequests.set(DataRequest(q.app_id, q.request_id, q.action, callback))
-      conn <- connectorService.connection(q.app_id)
+      _ <- repos.dataRequests.get(app.id, q.request_id).thenBadRequest("Request already exists")
+      _ <- repos.dataRequests.set(DataRequest(app.id, q.request_id, q.action, callback))
+      conn <- connectorService.connection(app.id)
       _ <- conn.send(OutPacketDataRequest(q))
     } yield ()
 }

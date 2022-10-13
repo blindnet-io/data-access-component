@@ -5,6 +5,7 @@ import services.*
 
 import cats.effect.IO
 import dev.profunktor.redis4cats.RedisCommands
+import io.blindnet.identityclient.auth.*
 import org.http4s.HttpRoutes
 import org.http4s.server.middleware.CORS
 import org.http4s.server.websocket.WebSocketBuilder2
@@ -13,12 +14,14 @@ import sttp.tapir.swagger.SwaggerUIOptions
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
 class Services(repos: Repositories, connectorService: ConnectorService) {
+  private val appAuthenticator = StAuthenticator(repos.apiTokens)
+  
   private val dataService = DataService(repos)
   private val requestService = RequestService(connectorService, repos)
 
   private val connectorEndpoints = ConnectorEndpoints(connectorService)
   private val dataEndpoints = DataEndpoints(dataService)
-  private val requestEndpoints = RequestEndpoints(requestService)
+  private val requestEndpoints = RequestEndpoints(appAuthenticator, requestService)
 
   private val apiEndpoints = List(
     connectorEndpoints.list,

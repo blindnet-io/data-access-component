@@ -15,6 +15,11 @@ abstract class Env() {
 
   val baseUrl: String = sys.env.getOrElse("BN_BASE_URL", s"http://$host:$port").stripSuffix("/")
 
+  lazy val migrate: Boolean
+  lazy val dbUri: String
+  lazy val dbUsername: String
+  lazy val dbPassword: String
+
   lazy val azureStorageAccountName: String = sys.env("BN_AZURE_STORAGE_ACC_NAME")
   lazy val azureStorageAccountKey: String = sys.env("BN_AZURE_STORAGE_ACC_KEY")
   lazy val azureStorageContainerName: String = sys.env("BN_AZURE_STORAGE_CONT_NAME")
@@ -22,6 +27,11 @@ abstract class Env() {
 
 class ProductionEnv() extends Env {
   override val name: String = "production"
+
+  override lazy val migrate: Boolean = sys.env.get("BN_MIGRATE").contains("yes")
+  override lazy val dbUri: String = sys.env("BN_DB_URI")
+  override lazy val dbUsername: String = sys.env("BN_DB_USER")
+  override lazy val dbPassword: String = sys.env("BN_DB_PASSWORD")
 }
 
 class StagingEnv() extends ProductionEnv {
@@ -30,6 +40,11 @@ class StagingEnv() extends ProductionEnv {
 
 class DevelopmentEnv() extends StagingEnv {
   override val name: String = "development"
+
+  override lazy val migrate: Boolean = sys.env.get("BN_MIGRATE").forall(_ == "yes")
+  override lazy val dbUri: String = sys.env.getOrElse("BN_DB_URI", "jdbc:postgresql://127.0.0.1/dac")
+  override lazy val dbUsername: String = sys.env.getOrElse("BN_DB_USER", "dac")
+  override lazy val dbPassword: String = sys.env.getOrElse("BN_DB_PASSWORD", "dac")
 
   // Fake values for testing purposes
   override lazy val azureStorageAccountName: String = sys.env.getOrElse("BN_AZURE_STORAGE_ACC_NAME", "account_name")

@@ -6,6 +6,7 @@ import cats.effect.*
 import cats.implicits.*
 import dev.profunktor.redis4cats.*
 import dev.profunktor.redis4cats.effect.Log.Stdout.*
+import io.blindnet.identityclient.IdentityClientBuilder
 import org.http4s.HttpApp
 import org.http4s.blaze.server.*
 import org.http4s.implicits.*
@@ -23,7 +24,8 @@ class ServerApp {
   val server: Resource[IO, Server] =
     for {
       repos <- Repositories()
-      services <- Resource.eval(Services(repos))
+      identityClient <- IdentityClientBuilder().resource
+      services <- Resource.eval(Services(repos, identityClient))
       server <- BlazeServerBuilder[IO]
         .bindHttp(Env.get.port, Env.get.host)
         .withHttpWebSocketApp(app(services))

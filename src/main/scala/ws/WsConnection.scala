@@ -12,8 +12,9 @@ import io.circe.parser.*
 import io.circe.syntax.*
 
 import java.nio.ByteBuffer
+import java.util.UUID
 
-case class WsConnection(repos: Repositories, appId: String, queue: Queue[IO, String]) {
+case class WsConnection(repos: Repositories, appId: UUID, queue: Queue[IO, String]) {
   def receive(raw: String): IO[Unit] =
     def parsePacket[T <: WsInPacket](): Option[T] =
       for {

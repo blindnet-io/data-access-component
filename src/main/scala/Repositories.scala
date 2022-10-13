@@ -11,7 +11,7 @@ import doobie.hikari.HikariTransactor
 import doobie.util.ExecutionContexts
 
 class Repositories(xa: Transactor[IO], redis: RedisCommands[IO, String, String]) {
-  val apiTokens: AppRepository = AppRepository(xa)
+  val apps: AppRepository = AppRepository(xa)
 
   val dataRequests: DataRequestRepository = DataRequestRepository(redis)
 }

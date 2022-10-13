@@ -11,8 +11,10 @@ import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityEncoder.*
 
+import java.util.UUID
+
 case class DataRequest(
-  appId: String,
+  appId: UUID,
   id: String,
   action: DataRequestAction,
   callback: Uri,

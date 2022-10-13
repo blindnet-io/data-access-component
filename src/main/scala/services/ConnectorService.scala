@@ -6,7 +6,7 @@ import endpoints.objects.DataCallbackPayload
 import errors.*
 import models.DataRequestAction
 import models.DataRequestReply
-import ws.{WsConnection, WsConnTracker}
+import ws.{WsConnTracker, WsConnection}
 
 import cats.effect.*
 import cats.effect.std.*
@@ -16,11 +16,12 @@ import org.http4s.*
 import org.http4s.blaze.client.*
 
 import java.nio.ByteBuffer
+import java.util.UUID
 
-class ConnectorService(repos: Repositories, state: Ref[IO, Map[String, WsConnTracker]]) {
+class ConnectorService(repos: Repositories, state: Ref[IO, Map[UUID, WsConnTracker]]) {
   implicit val uuidGen: UUIDGen[IO] = UUIDGen.fromSync
 
-  def ws(appId: String): IO[Pipe[IO, String, String]] =
+  def ws(appId: UUID): IO[Pipe[IO, String, String]] =
     for {
       queue <- Queue.unbounded[IO, String]
       conn = WsConnection(repos, appId, queue)
@@ -30,7 +31,7 @@ class ConnectorService(repos: Repositories, state: Ref[IO, Map[String, WsConnTra
         .mergeHaltBoth(in.evalTap(conn.receive).drain)
     }
 
-  def sendMainData(appId: String, requestId: String, last: Boolean, data: Stream[IO, Byte]): IO[Unit] =
+  def sendMainData(appId: UUID, requestId: String, last: Boolean, data: Stream[IO, Byte]): IO[Unit] =
     for {
       request <- repos.dataRequests.get(appId, requestId).orBadRequest("Request not found")
         .flatMap(req => req.dataId match
@@ -46,7 +47,7 @@ class ConnectorService(repos: Repositories, state: Ref[IO, Map[String, WsConnTra
       _ <- request.tryCallback(repos, last)
     } yield ()
 
-  def sendAdditionalData(appId: String, requestId: String, data: Stream[IO, Byte]): IO[String] =
+  def sendAdditionalData(appId: UUID, requestId: String, data: Stream[IO, Byte]): IO[String] =
     for {
       request <- repos.dataRequests.get(appId, requestId).orBadRequest("Request not found")
       dataId <- UUIDGen.randomString
@@ -55,7 +56,7 @@ class ConnectorService(repos: Repositories, state: Ref[IO, Map[String, WsConnTra
       _ <- data.through(AzureStorage.append(request.dataPath(dataId))).compile.drain
     } yield request.dataUrl(dataId)
 
-  private def tracker(appId: String): IO[WsConnTracker] =
+  private def tracker(appId: UUID): IO[WsConnTracker] =
     for {
       existing <- state.get.map(_.get(appId))
       tracker <- existing match
@@ -66,14 +67,14 @@ class ConnectorService(repos: Repositories, state: Ref[IO, Map[String, WsConnTra
         }
     } yield tracker
 
-  private def addConnection(appId: String, conn: WsConnection): IO[Unit] =
+  private def addConnection(appId: UUID, conn: WsConnection): IO[Unit] =
     tracker(appId).map(_.add(conn)).flatMap(newTracker => state.update(_ + (appId -> newTracker)))
 
-  def connection(appId: String): IO[WsConnection] =
+  def connection(appId: UUID): IO[WsConnection] =
     tracker(appId).map(_.get.get)
 }
 
 object ConnectorService {
   def apply(repos: Repositories): IO[ConnectorService] =
-    Ref[IO].of[Map[String, WsConnTracker]](Map.empty).map(new ConnectorService(repos, _))
+    Ref[IO].of[Map[UUID, WsConnTracker]](Map.empty).map(new ConnectorService(repos, _))
 }

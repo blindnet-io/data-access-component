@@ -4,8 +4,10 @@ package endpoints.objects
 import io.circe.*
 import io.circe.generic.semiauto.*
 
+import java.util.UUID
+
 case class DataCallbackPayload(
-  app_id: String,
+  app_id: UUID,
   request_id: String,
   accepted: Boolean,
   data_url: Option[String] = None,

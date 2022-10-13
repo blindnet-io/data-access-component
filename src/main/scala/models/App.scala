@@ -3,7 +3,9 @@ package models
 
 import io.blindnet.identityclient.auth.St
 
+import java.util.UUID
+
 case class App(
-  id: String,
+  id: UUID,
   token: String
 ) extends St

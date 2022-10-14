@@ -19,10 +19,11 @@ import java.nio.ByteBuffer
 
 case class InPacketDataRequestReply(request_id: String, typ: DataRequestReply) extends WsInPacket {
   override def handle(conn: WsConnection): IO[Unit] = for {
-    request <- conn.repos.dataRequests.get(conn.appId, request_id).orNotFound
-      .map(_.copy(reply = Some(typ)))
+    request <- conn.repos.dataRequests.get(conn.ns.appId, request_id).orNotFound
+      .flatTap(_.namespaces.contains(conn.ns.id).orBadRequest("Request does not contain this namespace"))
+      .map(_.withReply(conn.ns, typ))
     _ <- conn.repos.dataRequests.set(request)
-    _ <- request.tryCallback(conn.repos)
+    _ <- request.tryCallback(conn.repos, conn.ns)
   } yield ()
 }
 

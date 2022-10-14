@@ -9,6 +9,7 @@ import ws.packets.out.*
 
 import cats.effect.*
 import cats.effect.std.*
+import cats.implicits.*
 import fs2.*
 import fs2.concurrent.*
 import org.http4s.Uri
@@ -18,8 +19,11 @@ class RequestService(connectorService: ConnectorService, repos: Repositories) {
     for {
       callback <- Uri.fromString(q.callback).toOption.orBadRequest("Invalid callback")
       _ <- repos.dataRequests.get(app.id, q.request_id).thenBadRequest("Request already exists")
-      _ <- repos.dataRequests.set(DataRequest(app.id, q.request_id, q.action, callback))
-      conn <- connectorService.connection(app.id)
-      _ <- conn.send(OutPacketDataRequest(q))
+
+      namespaces <- repos.namespaces.findAllByApp(app.id)
+      _ <- repos.dataRequests.set(DataRequest(app.id, q.request_id, q.action, namespaces.map(_.id), callback))
+
+      connections <- namespaces.traverse(connectorService.connection)
+      _ <- connections.traverse(_.send(OutPacketDataRequest(q)))
     } yield ()
 }

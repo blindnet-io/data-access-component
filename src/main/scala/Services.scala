@@ -26,13 +26,14 @@ class Services(repos: Repositories, connectorService: ConnectorService, identity
         app = App(jwt.appId, token)
         _ <- repos.apps.insert(app)
       } yield app))
+  private val namespaceAuthenticator = StAuthenticator(repos.namespaces)
 
   private val configurationService = ConfigurationService(repos)
   private val dataService = DataService(repos)
   private val requestService = RequestService(connectorService, repos)
 
   private val configurationEndpoints = ConfigurationEndpoints(jwtAppAuthenticator, configurationService)
-  private val connectorEndpoints = ConnectorEndpoints(connectorService)
+  private val connectorEndpoints = ConnectorEndpoints(namespaceAuthenticator, connectorService)
   private val dataEndpoints = DataEndpoints(dataService)
   private val requestEndpoints = RequestEndpoints(appAuthenticator, requestService)
 

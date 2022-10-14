@@ -1,6 +1,6 @@
 package io.blindnet.dataaccess
 
-import db.AppRepository
+import db.*
 import redis.*
 
 import cats.effect.*
@@ -12,6 +12,7 @@ import doobie.util.ExecutionContexts
 
 class Repositories(xa: Transactor[IO], redis: RedisCommands[IO, String, String]) {
   val apps: AppRepository = AppRepository(xa)
+  val namespaces: NamespaceRepository = NamespaceRepository(xa)
 
   val dataRequests: DataRequestRepository = DataRequestRepository(redis)
 }

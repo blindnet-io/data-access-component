@@ -1,7 +1,8 @@
 package io.blindnet.dataaccess
 package models
 
-import endpoints.objects.DataCallbackPayload
+import endpoints.objects.{DataCallbackPayload, NamespacePayload}
+import models.Namespace
 
 import cats.effect.*
 import io.circe.*
@@ -17,30 +18,40 @@ case class DataRequest(
   appId: UUID,
   id: String,
   action: DataRequestAction,
+  namespaces: List[UUID],
   callback: Uri,
-  reply: Option[DataRequestReply] = None,
-  dataId: Option[String] = None,
-  additionalDataIds: List[String] = Nil,
+  replies: Map[UUID, DataRequestReply] = Map.empty,
+  dataIds: Map[UUID, String] = Map.empty,
+  additionalDataIds: Map[UUID, List[String]] = Map.empty,
 ) {
+  def withReply(ns: Namespace, reply: DataRequestReply): DataRequest =
+    copy(replies = replies + (ns.id -> reply))
+
+  def withDataId(ns: Namespace, dataId: String): DataRequest =
+    copy(dataIds = dataIds + (ns.id -> dataId))
+
+  def withAdditionalDataId(ns: Namespace, dataId: String): DataRequest =
+    copy(additionalDataIds = additionalDataIds.updatedWith(ns.id)(opt => Some(dataId :: opt.getOrElse(Nil))))
+
   def dataPath(dataId: String) = s"$appId/$id/$dataId"
   def dataUrl(dataId: String) = s"${Env.get.baseUrl}/v1/data/${dataPath(dataId)}"
 
-  def hasCompleteReply(mainDataSent: Boolean): Boolean =
-    reply.isDefined && (action == DataRequestAction.DELETE ||
-      (action == DataRequestAction.GET && dataId.isDefined && mainDataSent)
+  def hasCompleteReply(ns: Namespace, mainDataSent: Boolean): Boolean =
+    replies.contains(ns.id) && (action == DataRequestAction.DELETE ||
+      (action == DataRequestAction.GET && dataIds.contains(ns.id) && mainDataSent)
     )
 
   /**
    * Tries calling the callback if a complete reply has been received, else does nothing.
    * @param mainDataSent if this is a GET request, whether the main data has been sent
    */
-  def tryCallback(repos: Repositories, mainDataSent: Boolean = false): IO[Unit] =
-    if hasCompleteReply(mainDataSent)
+  def tryCallback(repos: Repositories, ns: Namespace, mainDataSent: Boolean = false): IO[Unit] =
+    if hasCompleteReply(ns, mainDataSent)
     then for {
       _ <- BlazeClientBuilder[IO].resource.use(_.successful(Request[IO](
         Method.POST,
         callback,
-      ).withEntity(DataCallbackPayload(appId, id, reply.get == DataRequestReply.ACCEPT, dataId.map(dataUrl)))))
+      ).withEntity(DataCallbackPayload(appId, id, NamespacePayload(ns.id, ns.name), replies(ns.id) == DataRequestReply.ACCEPT, dataIds.get(ns.id).map(dataUrl)))))
       _ <- repos.dataRequests.delete(appId, id)
     } yield ()
     else IO.unit

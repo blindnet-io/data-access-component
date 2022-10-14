@@ -13,6 +13,8 @@ import sttp.tapir.*
 import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
 
+import java.util.UUID
+
 class ConfigurationEndpoints(authenticator: JwtAppAuthenticator, service: ConfigurationService) {
   private val base = authenticator.withBaseEndpoint(endpoint.tag("Configuration").in("configuration")).secureEndpoint
 
@@ -30,8 +32,40 @@ class ConfigurationEndpoints(authenticator: JwtAppAuthenticator, service: Config
       .out(jsonBody[String])
       .serverLogicSuccess(service.resetToken)
 
+  val getNamespaces: ApiEndpoint =
+    base.summary("Get the namespaces defined for this app")
+      .get
+      .in("namespaces")
+      .out(jsonBody[List[NamespacePayload]])
+      .serverLogicSuccess(service.getNamespaces)
+
+  val getNamespace: ApiEndpoint =
+    base.summary("Get information about a namespace")
+      .get
+      .in("namespaces" / path[UUID]("namespace"))
+      .out(jsonBody[NamespacePayload])
+      .serverLogicSuccess(service.getNamespace)
+
+  val getNamespaceToken: ApiEndpoint =
+    base.summary("Get the current API token for a namespace")
+      .get
+      .in("namespaces" / path[UUID]("namespace") / "token")
+      .out(jsonBody[String])
+      .serverLogicSuccess(service.getNamespaceToken)
+
+  val resetNamespaceToken: ApiEndpoint =
+    base.summary("Invalidate the current API token of a namespace and create a new one")
+      .post
+      .in("namespaces" / path[UUID]("namespace") / "token" / "reset")
+      .out(jsonBody[String])
+      .serverLogicSuccess(service.resetNamespaceToken)
+
   val list: List[ApiEndpoint] = List(
     getToken,
-    resetToken
+    resetToken,
+    getNamespaces,
+    getNamespace,
+    getNamespaceToken,
+    resetNamespaceToken
   )
 }

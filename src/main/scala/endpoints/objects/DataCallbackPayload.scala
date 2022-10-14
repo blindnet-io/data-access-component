@@ -17,12 +17,3 @@ case class DataCallbackPayload(
 object DataCallbackPayload {
   implicit val encoder: Encoder[DataCallbackPayload] = deriveEncoder[DataCallbackPayload]
 }
-
-case class NamespacePayload(
-  id: UUID,
-  name: String,
-)
-
-object NamespacePayload {
-  given Encoder[NamespacePayload] = deriveEncoder[NamespacePayload]
-}

@@ -20,4 +20,8 @@ class NamespaceRepository(xa: Transactor[IO]) extends StRepository[Namespace, IO
   def findAllByApp(appId: UUID): IO[List[Namespace]] =
     sql"select id, app_id, name, token from namespaces where app_id=$appId"
       .query[Namespace].to[List].transact(xa)
+
+  def insert(ns: Namespace): IO[Unit] =
+    sql"insert into namespaces (id, app_id, name, token) values (${ns.id}, ${ns.appId}, ${ns.name}, ${ns.token})"
+      .update.run.transact(xa).void
 }

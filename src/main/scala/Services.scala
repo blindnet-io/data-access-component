@@ -20,7 +20,7 @@ class Services(repos: Repositories, connectorService: ConnectorService, identity
   private val configurationService = ConfigurationService(repos)
   private val dataService = DataService(repos)
   private val requestService = RequestService(connectorService, repos)
-  
+
   private val appAuthenticator = StAuthenticator(repos.apps)
   private val jwtAuthenticator = JwtAuthenticator(identityClient)
   private val jwtAppAuthenticator = JwtAppAuthenticator(repos, configurationService, jwtAuthenticator)
@@ -32,6 +32,7 @@ class Services(repos: Repositories, connectorService: ConnectorService, identity
   private val requestEndpoints = RequestEndpoints(appAuthenticator, requestService)
 
   private val apiEndpoints = List(
+    configurationEndpoints.list,
     connectorEndpoints.list,
     dataEndpoints.list,
     requestEndpoints.list,

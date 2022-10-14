@@ -24,7 +24,7 @@ class ServerApp {
   val server: Resource[IO, Server] =
     for {
       repos <- Repositories()
-      identityClient <- IdentityClientBuilder().resource
+      identityClient <- IdentityClientBuilder().withBaseUri(Env.get.identityUrl).resource
       services <- Resource.eval(Services(repos, identityClient))
       server <- BlazeServerBuilder[IO]
         .bindHttp(Env.get.port, Env.get.host)

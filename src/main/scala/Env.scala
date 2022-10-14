@@ -1,5 +1,8 @@
 package io.blindnet.dataaccess
 
+import io.blindnet.identityclient.IdentityClientBuilder
+import org.http4s.Uri
+
 object Env {
   val get: Env = sys.env.getOrElse("BN_ENV", "") match
     case "production" => ProductionEnv()
@@ -19,6 +22,10 @@ abstract class Env() {
   lazy val dbUri: String
   lazy val dbUsername: String
   lazy val dbPassword: String
+
+  val identityUrl: Uri = sys.env.get("BN_IDENTITY_URL")
+    .map(Uri.fromString.andThen(_.getOrElse(throw RuntimeException("BN_IDENTITY_URL is not an URI"))))
+    .getOrElse(IdentityClientBuilder.defaultBaseUri)
 
   lazy val azureStorageAccountName: String = sys.env("BN_AZURE_STORAGE_ACC_NAME")
   lazy val azureStorageAccountKey: String = sys.env("BN_AZURE_STORAGE_ACC_KEY")

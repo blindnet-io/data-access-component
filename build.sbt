@@ -15,7 +15,7 @@ lazy val root = (project in file("."))
     organizationName := "blindnet",
     organizationHomepage := Some(url("https://blindnet.io")),
     idePackagePrefix := Some("io.blindnet.dataaccess"),
-    resolvers += Resolver.mavenLocal,
+    resolvers += "Blindnet Snapshots" at "https://nexus.blindnet.io/repository/maven-snapshots",
     libraryDependencies ++= Seq(
       "com.azure"                   %  "azure-storage-blob"              % "12.18.0",
       "com.softwaremill.sttp.tapir" %% "tapir-core"                      % tapirVersion,
@@ -23,7 +23,7 @@ lazy val root = (project in file("."))
       "com.softwaremill.sttp.tapir" %% "tapir-json-circe"                % tapirVersion,
       "com.softwaremill.sttp.tapir" %% "tapir-swagger-ui-bundle"         % tapirVersion,
       "dev.profunktor"              %% "redis4cats-effects"              % "1.2.0",
-      "io.blindnet"                 %% "identity-client"                 % "0.1.0-SNAPSHOT",
+      "io.blindnet"                 %% "identity-client"                 % "1.0.0-SNAPSHOT",
       "io.circe"                    %% "circe-core"                      % circeVersion,
       "io.circe"                    %% "circe-generic"                   % circeVersion,
       "io.circe"                    %% "circe-literal"                   % circeVersion % Test,

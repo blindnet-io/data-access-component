@@ -14,9 +14,13 @@ import fs2.*
 import fs2.concurrent.*
 import org.http4s.Uri
 
+import java.util.UUID
+
 class RequestService(connectorService: ConnectorService, repos: Repositories) {
-  def create(app: App)(q: DataRequestPayload): IO[Unit] =
+  def create(q: DataRequestPayload): IO[Unit] =
     for {
+      app <- repos.apps.findById(UUID.fromString("6f083c15-4ada-4671-a6d1-c671bc9105dc")).orNotFound
+
       callback <- Uri.fromString(q.callback).toOption.orBadRequest("Invalid callback")
       _ <- repos.dataRequests.get(app.id, q.request_id).thenBadRequest("Request already exists")
 

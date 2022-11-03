@@ -30,8 +30,21 @@ class ConnectorService(repos: Repositories, state: Ref[IO, Map[UUID, WsConnTrack
       _ <- conn.send(OutPacketWelcome(ns.appId, ns.id, ns.name))
       _ <- addConnection(ns, conn)
     } yield (in: Stream[IO, String]) => {
-      Stream.fromQueueUnterminated(queue, Int.MaxValue)
-        .mergeHaltBoth(in.evalTap(conn.receive).drain)
+      // noneTerminate should theoretically be enough to detect disconnects, but the Stream will actually fail
+      // with an EOF error and therefore not emit a None.
+      // We are keeping the call to noneTerminate, in the unlikely event that it could actually not fail sometimes.
+      // unNoneTerminate prevents emitting None twice in this same unlikely event.
+      //
+      // See (*probably* related):
+      // https://github.com/http4s/blaze/issues/668
+      // https://github.com/softwaremill/adopt-tapir/pull/223
+      Stream.fromQueueUnterminated(queue, Int.MaxValue).merge(
+        in.noneTerminate
+          .handleErrorWith(_ => Stream(None))
+          .evalTap(_.map(conn.receive).getOrElse(removeConnection(ns, conn)))
+          .unNoneTerminate
+          .drain
+      )
     }
 
   def sendMainData(ns: Namespace)(requestId: String, last: Boolean, data: Stream[IO, Byte]): IO[Unit] =
@@ -72,8 +85,14 @@ class ConnectorService(repos: Repositories, state: Ref[IO, Map[UUID, WsConnTrack
         }
     } yield tracker
 
+  private def updateTracker(ns: Namespace, f: WsConnTracker => WsConnTracker): IO[Unit] =
+    state.update(map => map + (ns.id -> f(map.getOrElse(ns.id, WsConnTracker()))))
+
   private def addConnection(ns: Namespace, conn: WsConnection): IO[Unit] =
-    tracker(ns).map(_.add(conn)).flatMap(newTracker => state.update(_ + (ns.id -> newTracker)))
+    updateTracker(ns, _.add(conn))
+
+  private def removeConnection(ns: Namespace, conn: WsConnection): IO[Unit] =
+    updateTracker(ns, _.remove(conn))
 
   def connection(ns: Namespace): IO[WsConnection] =
     tracker(ns).map(_.get.get)

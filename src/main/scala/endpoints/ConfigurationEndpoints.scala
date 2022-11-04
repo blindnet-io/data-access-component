@@ -32,40 +32,40 @@ class ConfigurationEndpoints(authenticator: JwtAppAuthenticator, service: Config
       .out(jsonBody[String])
       .serverLogicSuccess(service.resetToken)
 
-  val getNamespaces: ApiEndpoint =
-    base.summary("Get the namespaces defined for this app")
+  val getConnectors: ApiEndpoint =
+    base.summary("Get the connectors defined for this app")
       .get
-      .in("namespaces")
-      .out(jsonBody[List[NamespacePayload]])
-      .serverLogicSuccess(service.getNamespaces)
+      .in("connectors")
+      .out(jsonBody[List[ConnectorPayload]])
+      .serverLogicSuccess(service.getConnectors)
 
-  val getNamespace: ApiEndpoint =
-    base.summary("Get information about a namespace")
+  val getConnector: ApiEndpoint =
+    base.summary("Get information about a connector")
       .get
-      .in("namespaces" / path[UUID]("namespace"))
-      .out(jsonBody[NamespacePayload])
-      .serverLogicSuccess(service.getNamespace)
+      .in("connectors" / path[UUID]("connector"))
+      .out(jsonBody[ConnectorPayload])
+      .serverLogicSuccess(service.getConnector)
 
-  val getNamespaceToken: ApiEndpoint =
-    base.summary("Get the current API token for a namespace")
+  val getConnectorToken: ApiEndpoint =
+    base.summary("Get the current API token for a connector")
       .get
-      .in("namespaces" / path[UUID]("namespace") / "token")
+      .in("connectors" / path[UUID]("connector") / "token")
       .out(jsonBody[String])
-      .serverLogicSuccess(service.getNamespaceToken)
+      .serverLogicSuccess(service.getConnectorToken)
 
-  val resetNamespaceToken: ApiEndpoint =
-    base.summary("Invalidate the current API token of a namespace and create a new one")
+  val resetConnectorToken: ApiEndpoint =
+    base.summary("Invalidate the current API token of a connector and create a new one")
       .post
-      .in("namespaces" / path[UUID]("namespace") / "token" / "reset")
+      .in("connectors" / path[UUID]("connector") / "token" / "reset")
       .out(jsonBody[String])
-      .serverLogicSuccess(service.resetNamespaceToken)
+      .serverLogicSuccess(service.resetConnectorToken)
 
   val list: List[ApiEndpoint] = List(
     getToken,
     resetToken,
-    getNamespaces,
-    getNamespace,
-    getNamespaceToken,
-    resetNamespaceToken
+    getConnectors,
+    getConnector,
+    getConnectorToken,
+    resetConnectorToken
   )
 }

@@ -1,7 +1,7 @@
 package io.blindnet.dataaccess
 package endpoints
 
-import endpoints.auth.NamespaceAuthenticator
+import endpoints.auth.ConnectorAuthenticator
 import services.ConnectorService
 
 import cats.effect.IO
@@ -11,7 +11,7 @@ import sttp.tapir.json.circe.*
 
 import java.util.UUID
 
-class ConnectorEndpoints(authenticator: NamespaceAuthenticator, service: ConnectorService) {
+class ConnectorEndpoints(authenticator: ConnectorAuthenticator, service: ConnectorService) {
   private val base = authenticator.withBaseEndpoint(endpoint.tag("Connectors").in("connectors")).secureEndpoint
 
   val ws: ApiEndpoint =

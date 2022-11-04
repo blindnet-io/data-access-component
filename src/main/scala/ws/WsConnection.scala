@@ -1,7 +1,7 @@
 package io.blindnet.dataaccess
 package ws
 
-import models.Namespace
+import models.Connector
 import redis.DataRequestRepository
 import ws.*
 
@@ -15,7 +15,7 @@ import io.circe.syntax.*
 import java.nio.ByteBuffer
 import java.util.UUID
 
-case class WsConnection(repos: Repositories, ns: Namespace, queue: Queue[IO, String]) {
+case class WsConnection(repos: Repositories, connector: Connector, queue: Queue[IO, String]) {
   def receive(raw: String): IO[Unit] =
     def parsePacket[T <: WsInPacket](): Option[T] =
       for {

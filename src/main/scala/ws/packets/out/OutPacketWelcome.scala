@@ -10,7 +10,7 @@ import io.circe.generic.semiauto.*
 
 import java.util.UUID
 
-case class OutPacketWelcome(app_id: UUID, namespace_id: UUID, namespace_name: String) extends WsOutPacket {
+case class OutPacketWelcome(app_id: UUID, connector_id: UUID, connector_name: String) extends WsOutPacket {
   override def typ: String = "welcome"
 }
 

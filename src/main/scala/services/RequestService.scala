@@ -20,10 +20,10 @@ class RequestService(connectorService: ConnectorService, repos: Repositories) {
       callback <- Uri.fromString(q.callback).toOption.orBadRequest("Invalid callback")
       _ <- repos.dataRequests.get(app.id, q.request_id).thenBadRequest("Request already exists")
 
-      namespaces <- repos.namespaces.findAllByApp(app.id)
-      _ <- repos.dataRequests.set(DataRequest(app.id, q.request_id, q.action, namespaces.map(_.id), callback))
+      connectors <- repos.connectors.findAllByApp(app.id)
+      _ <- repos.dataRequests.set(DataRequest(app.id, q.request_id, q.action, connectors.map(_.id), callback))
 
-      connections <- namespaces.traverse(connectorService.connection)
+      connections <- connectors.traverse(connectorService.connection)
       _ <- connections.traverse(_.send(OutPacketDataRequest(q)))
     } yield ()
 }

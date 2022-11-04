@@ -6,7 +6,7 @@ import endpoints.objects.DataCallbackPayload
 import errors.*
 import models.DataRequestAction
 import models.DataRequestReply
-import models.Namespace
+import models.Connector
 import ws.{WsConnTracker, WsConnection}
 import ws.packets.out.OutPacketWelcome
 
@@ -23,12 +23,12 @@ import java.util.UUID
 class ConnectorService(repos: Repositories, state: Ref[IO, Map[UUID, WsConnTracker]]) {
   implicit val uuidGen: UUIDGen[IO] = UUIDGen.fromSync
 
-  def ws(ns: Namespace)(x: Unit): IO[Pipe[IO, String, String]] =
+  def ws(co: Connector)(x: Unit): IO[Pipe[IO, String, String]] =
     for {
       queue <- Queue.unbounded[IO, String]
-      conn = WsConnection(repos, ns, queue)
-      _ <- conn.send(OutPacketWelcome(ns.appId, ns.id, ns.name))
-      _ <- addConnection(ns, conn)
+      conn = WsConnection(repos, co, queue)
+      _ <- conn.send(OutPacketWelcome(co.appId, co.id, co.name))
+      _ <- addConnection(co, conn)
     } yield (in: Stream[IO, String]) => {
       // noneTerminate should theoretically be enough to detect disconnects, but the Stream will actually fail
       // with an EOF error and therefore not emit a None.
@@ -41,61 +41,61 @@ class ConnectorService(repos: Repositories, state: Ref[IO, Map[UUID, WsConnTrack
       Stream.fromQueueUnterminated(queue, Int.MaxValue).merge(
         in.noneTerminate
           .handleErrorWith(_ => Stream(None))
-          .evalTap(_.map(conn.receive).getOrElse(removeConnection(ns, conn)))
+          .evalTap(_.map(conn.receive).getOrElse(removeConnection(co, conn)))
           .unNoneTerminate
           .drain
       )
     }
 
-  def sendMainData(ns: Namespace)(requestId: String, last: Boolean, data: Stream[IO, Byte]): IO[Unit] =
+  def sendMainData(co: Connector)(requestId: String, last: Boolean, data: Stream[IO, Byte]): IO[Unit] =
     for {
-      request <- repos.dataRequests.get(ns.appId, requestId).orBadRequest("Request not found")
-        .flatMap(req => req.dataIds.get(ns.id) match
+      request <- repos.dataRequests.get(co.appId, requestId).orBadRequest("Request not found")
+        .flatMap(req => req.dataIds.get(co.id) match
           case Some(value) => IO.pure(req)
           case None => for {
-            _ <- req.namespaces.contains(ns.id).orBadRequest("Request does not contain this namespace")
+            _ <- req.connectors.contains(co.id).orBadRequest("Request does not contain this connector")
             _ <- (req.action == DataRequestAction.GET).orBadRequest("Request is not GET")
             dataId <- UUIDGen.randomString
-            newReq = req.withReply(ns, DataRequestReply.ACCEPT).withDataId(ns, dataId)
+            newReq = req.withReply(co, DataRequestReply.ACCEPT).withDataId(co, dataId)
             _ <- AzureStorage.createAppendBlob(newReq.dataPath(dataId))
             _ <- repos.dataRequests.set(newReq)
           } yield newReq)
-      _ <- data.through(AzureStorage.append(request.dataPath(request.dataIds(ns.id)))).compile.drain
-      _ <- request.tryCallback(repos, ns, last)
+      _ <- data.through(AzureStorage.append(request.dataPath(request.dataIds(co.id)))).compile.drain
+      _ <- request.tryCallback(repos, co, last)
     } yield ()
 
-  def sendAdditionalData(ns: Namespace)(requestId: String, data: Stream[IO, Byte]): IO[String] =
+  def sendAdditionalData(co: Connector)(requestId: String, data: Stream[IO, Byte]): IO[String] =
     for {
-      request <- repos.dataRequests.get(ns.appId, requestId).orBadRequest("Request not found")
-      _ <- request.namespaces.contains(ns.id).orBadRequest("Request does not contain this namespace")
+      request <- repos.dataRequests.get(co.appId, requestId).orBadRequest("Request not found")
+      _ <- request.connectors.contains(co.id).orBadRequest("Request does not contain this connector")
       dataId <- UUIDGen.randomString
       _ <- AzureStorage.createAppendBlob(request.dataPath(dataId))
-      _ <- repos.dataRequests.set(request.withAdditionalDataId(ns, dataId))
+      _ <- repos.dataRequests.set(request.withAdditionalDataId(co, dataId))
       _ <- data.through(AzureStorage.append(request.dataPath(dataId))).compile.drain
     } yield request.dataUrl(dataId)
 
-  private def tracker(ns: Namespace): IO[WsConnTracker] =
+  private def tracker(co: Connector): IO[WsConnTracker] =
     for {
-      existing <- state.get.map(_.get(ns.id))
+      existing <- state.get.map(_.get(co.id))
       tracker <- existing match
         case Some(value) => IO.pure(value)
         case None => {
           val newTracker = WsConnTracker()
-          state.update(_ + (ns.id -> newTracker)).as(newTracker)
+          state.update(_ + (co.id -> newTracker)).as(newTracker)
         }
     } yield tracker
 
-  private def updateTracker(ns: Namespace, f: WsConnTracker => WsConnTracker): IO[Unit] =
-    state.update(map => map + (ns.id -> f(map.getOrElse(ns.id, WsConnTracker()))))
+  private def updateTracker(co: Connector, f: WsConnTracker => WsConnTracker): IO[Unit] =
+    state.update(map => map + (co.id -> f(map.getOrElse(co.id, WsConnTracker()))))
 
-  private def addConnection(ns: Namespace, conn: WsConnection): IO[Unit] =
-    updateTracker(ns, _.add(conn))
+  private def addConnection(co: Connector, conn: WsConnection): IO[Unit] =
+    updateTracker(co, _.add(conn))
 
-  private def removeConnection(ns: Namespace, conn: WsConnection): IO[Unit] =
-    updateTracker(ns, _.remove(conn))
+  private def removeConnection(co: Connector, conn: WsConnection): IO[Unit] =
+    updateTracker(co, _.remove(conn))
 
-  def connection(ns: Namespace): IO[WsConnection] =
-    tracker(ns).map(_.get.get)
+  def connection(co: Connector): IO[WsConnection] =
+    tracker(co).map(_.get.get)
 }
 
 object ConnectorService {

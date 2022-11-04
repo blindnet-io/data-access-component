@@ -13,7 +13,7 @@ import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
 
 class RequestEndpoints(authenticator: AppAuthenticator, service: RequestService) {
-  private val base = endpoint.tag("Requests").in("requests")
+  private val base = authenticator.withBaseEndpoint(endpoint.tag("Requests").in("requests")).secureEndpoint
 
   val create: ApiEndpoint =
     base.summary("Create a data request")

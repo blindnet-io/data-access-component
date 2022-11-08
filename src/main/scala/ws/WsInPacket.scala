@@ -4,12 +4,13 @@ package ws
 import ws.packets.in.*
 
 import cats.effect.IO
+import io.blindnet.dataaccess.models.Connector
 import io.circe.Decoder
 
 import java.nio.ByteBuffer
 
 trait WsInPacket {
-  def handle(conn: WsConnection): IO[Unit]
+  def handle(conn: WsConnection, coOpt: Option[Connector]): IO[Unit]
 }
 
 object WsInPacket {

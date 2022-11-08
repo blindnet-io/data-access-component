@@ -5,24 +5,42 @@ import endpoints.auth.ConnectorAuthenticator
 import services.ConnectorService
 
 import cats.effect.IO
+import io.blindnet.identityclient.auth.ConstAuthenticator
 import sttp.capabilities.fs2.Fs2Streams
+import sttp.model.StatusCode
 import sttp.tapir.*
 import sttp.tapir.json.circe.*
 
 import java.util.UUID
 
 class ConnectorEndpoints(authenticator: ConnectorAuthenticator, service: ConnectorService) {
-  private val base = authenticator.withBaseEndpoint(endpoint.tag("Connectors").in("connectors")).secureEndpoint
+  private val publicBase = endpoint.tag("Connectors").in("connectors")
+  private val customBase = authenticator.withBaseEndpoint(publicBase).secureEndpoint
+  private val globalBase = ConstAuthenticator(Env.get.globalConnectorToken, IO.pure(())).withBaseEndpoint(publicBase).secureEndpoint
+  private val dualBase = publicBase
+    .securityIn(header[Option[String]]("Authorization"))
+    .securityIn(header[Option[String]]("X-Application-ID"))
+    .securityIn(header[Option[String]]("X-Connector-ID"))
+    .errorOut(statusCode)
+    .errorOut(jsonBody[String])
+    .serverSecurityLogic(service.dualAuth(authenticator).tupled(_).map(_.left.map((StatusCode.Unauthorized, _))))
 
-  val ws: ApiEndpoint =
-    base.summary("Establish WebSocket connection")
+  val wsCustom: ApiEndpoint =
+    customBase.summary("Establish WebSocket connection (custom connector)")
       .get
-      .in("ws")
+      .in("ws" / "custom")
       .out(webSocketBody[String, CodecFormat.TextPlain, String, CodecFormat.TextPlain](Fs2Streams[IO]))
-      .serverLogicSuccess(service.ws)
+      .serverLogicSuccess(service.wsCustom)
+
+  val wsGlobal: ApiEndpoint =
+    globalBase.summary("Establish WebSocket connection (global connector)")
+      .get
+      .in("ws" / "global")
+      .out(webSocketBody[String, CodecFormat.TextPlain, String, CodecFormat.TextPlain](Fs2Streams[IO]))
+      .serverLogicSuccess(service.wsGlobal)
 
   val sendMainData: ApiEndpoint =
-    base.summary("Send main data")
+    dualBase.summary("Send main data")
       .post
       .in("data" / path[String]("request_id") / "main")
       .in(query[Boolean]("last"))
@@ -30,7 +48,7 @@ class ConnectorEndpoints(authenticator: ConnectorAuthenticator, service: Connect
       .serverLogicSuccess(service.sendMainData)
 
   val sendAdditionalData: ApiEndpoint =
-    base.summary("Send additional data")
+    dualBase.summary("Send additional data")
       .post
       .in("data" / path[String]("request_id") / "additional")
       .in(streamBinaryBody(Fs2Streams[IO])(CodecFormat.OctetStream()))
@@ -38,7 +56,8 @@ class ConnectorEndpoints(authenticator: ConnectorAuthenticator, service: Connect
       .serverLogicSuccess(service.sendAdditionalData)
 
   val list: List[ApiEndpoint] = List(
-    ws,
+    wsCustom,
+    wsGlobal,
     sendMainData,
     sendAdditionalData
   )

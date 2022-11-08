@@ -12,7 +12,7 @@ import doobie.util.ExecutionContexts
 
 class Repositories(xa: Transactor[IO], redis: RedisCommands[IO, String, String]) {
   val apps: AppRepository = AppRepository(xa)
-  val connectors: NamespaceRepository = NamespaceRepository(xa)
+  val connectors: ConnectorRepository = ConnectorRepository(xa)
 
   val dataRequests: DataRequestRepository = DataRequestRepository(redis)
 }

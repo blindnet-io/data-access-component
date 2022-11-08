@@ -26,6 +26,8 @@ abstract class Env() {
   val identityUrl: Uri = sys.env.get("BN_IDENTITY_URL")
     .map(Uri.fromString.andThen(_.getOrElse(throw RuntimeException("BN_IDENTITY_URL is not an URI"))))
     .getOrElse(IdentityClientBuilder.defaultBaseUri)
+  
+  val globalConnectorToken: String = sys.env("BN_GLOBAL_CONNECTOR_TOKEN")
 
   lazy val azureStorageAccountName: String = sys.env("BN_AZURE_STORAGE_ACC_NAME")
   lazy val azureStorageAccountKey: String = sys.env("BN_AZURE_STORAGE_ACC_KEY")

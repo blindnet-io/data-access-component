@@ -1,51 +1,58 @@
 package io.blindnet.dataaccess
 package services
 
+import endpoints.auth.ConnectorAuthenticator
 import azure.AzureStorage
 import endpoints.objects.DataCallbackPayload
 import errors.*
 import models.DataRequestAction
 import models.DataRequestReply
 import models.Connector
-import ws.{WsConnTracker, WsConnection}
+import ws.{WsConnTracker, WsConnection, WsState}
 import ws.packets.out.OutPacketWelcome
 
+import cats.data.EitherT
 import cats.effect.*
 import cats.effect.std.*
 import fs2.*
 import fs2.concurrent.*
+import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import org.http4s.*
 import org.http4s.blaze.client.*
+import sttp.model.StatusCode
 
 import java.nio.ByteBuffer
 import java.util.UUID
+import scala.util.Try
 
-class ConnectorService(repos: Repositories, state: Ref[IO, Map[UUID, WsConnTracker]]) {
+case class ConnectorService(repos: Repositories, state: WsState) {
   implicit val uuidGen: UUIDGen[IO] = UUIDGen.fromSync
 
-  def ws(co: Connector)(x: Unit): IO[Pipe[IO, String, String]] =
+  def dualAuth(authenticator: ConnectorAuthenticator)
+              (authOpt: Option[String], appOpt: Option[String], coOpt: Option[String]): IO[Either[String, Connector]] =
+    if authOpt.contains("Bearer " + Env.get.globalConnectorToken) then
+      (for {
+        appId <- EitherT.fromOption[IO](appOpt, "Missing X-Application-ID header")
+          .flatMap(raw => EitherT.fromOption[IO](Try(UUID.fromString(raw)).toOption, "Invalid application ID"))
+        coId <- EitherT.fromOption[IO](appOpt, "Missing X-Connector-ID header")
+          .flatMap(raw => EitherT.fromOption[IO](Try(UUID.fromString(raw)).toOption, "Invalid connector ID"))
+        co <- EitherT.fromOptionF(repos.connectors.findById(appId, coId), "Connector not found")
+      } yield co).value
+    else authenticator.authenticateHeader(authOpt)
+
+  def wsCustom(co: Connector)(x: Unit): IO[Pipe[IO, String, String]] =
     for {
-      queue <- Queue.unbounded[IO, String]
-      conn = WsConnection(repos, co, queue)
+      conn <- WsConnection(repos, Some(co))
       _ <- conn.send(OutPacketWelcome(co.appId, co.id, co.name))
-      _ <- addConnection(co, conn)
-    } yield (in: Stream[IO, String]) => {
-      // noneTerminate should theoretically be enough to detect disconnects, but the Stream will actually fail
-      // with an EOF error and therefore not emit a None.
-      // We are keeping the call to noneTerminate, in the unlikely event that it could actually not fail sometimes.
-      // unNoneTerminate prevents emitting None twice in this same unlikely event.
-      //
-      // See (*probably* related):
-      // https://github.com/http4s/blaze/issues/668
-      // https://github.com/softwaremill/adopt-tapir/pull/223
-      Stream.fromQueueUnterminated(queue, Int.MaxValue).merge(
-        in.noneTerminate
-          .handleErrorWith(_ => Stream(None))
-          .evalTap(_.map(conn.receive).getOrElse(removeConnection(co, conn)))
-          .unNoneTerminate
-          .drain
-      )
-    }
+      _ <- state.addCustomConnection(co, conn)
+    } yield conn.pipe(state.removeCustomConnection(co, conn))
+
+  def wsGlobal(x: Unit)(y: Unit): IO[Pipe[IO, String, String]] =
+    for {
+      conn <- WsConnection(repos, None)
+      _ <- conn.send(OutPacketWelcome())
+      _ <- state.addGlobalConnection(conn)
+    } yield conn.pipe(state.removeGlobalConnection(conn))
 
   def sendMainData(co: Connector)(requestId: String, last: Boolean, data: Stream[IO, Byte]): IO[Unit] =
     for {
@@ -73,32 +80,9 @@ class ConnectorService(repos: Repositories, state: Ref[IO, Map[UUID, WsConnTrack
       _ <- repos.dataRequests.set(request.withAdditionalDataId(co, dataId))
       _ <- data.through(AzureStorage.append(request.dataPath(dataId))).compile.drain
     } yield request.dataUrl(dataId)
-
-  private def tracker(co: Connector): IO[WsConnTracker] =
-    for {
-      existing <- state.get.map(_.get(co.id))
-      tracker <- existing match
-        case Some(value) => IO.pure(value)
-        case None => {
-          val newTracker = WsConnTracker()
-          state.update(_ + (co.id -> newTracker)).as(newTracker)
-        }
-    } yield tracker
-
-  private def updateTracker(co: Connector, f: WsConnTracker => WsConnTracker): IO[Unit] =
-    state.update(map => map + (co.id -> f(map.getOrElse(co.id, WsConnTracker()))))
-
-  private def addConnection(co: Connector, conn: WsConnection): IO[Unit] =
-    updateTracker(co, _.add(conn))
-
-  private def removeConnection(co: Connector, conn: WsConnection): IO[Unit] =
-    updateTracker(co, _.remove(conn))
-
-  def connection(co: Connector): IO[WsConnection] =
-    tracker(co).map(_.get.get)
 }
 
 object ConnectorService {
   def apply(repos: Repositories): IO[ConnectorService] =
-    Ref[IO].of[Map[UUID, WsConnTracker]](Map.empty).map(new ConnectorService(repos, _))
+    WsState().map(new ConnectorService(repos, _))
 }

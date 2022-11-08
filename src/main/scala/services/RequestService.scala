@@ -23,7 +23,7 @@ class RequestService(connectorService: ConnectorService, repos: Repositories) {
       connectors <- repos.connectors.findAllByApp(app.id)
       _ <- repos.dataRequests.set(DataRequest(app.id, q.request_id, q.action, connectors.map(_.id), callback))
 
-      connections <- connectors.traverse(connectorService.connection)
-      _ <- connections.traverse(_.send(OutPacketDataRequest(q)))
+      packet = OutPacketDataRequest(q)
+      _ <- connectors.traverse(connectorService.state.send(_, packet))
     } yield ()
 }

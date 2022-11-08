@@ -4,7 +4,7 @@ package ws.packets.in
 import azure.AzureStorage
 import endpoints.objects.DataCallbackPayload
 import errors.*
-import models.DataRequestReply
+import models.{Connector, DataRequestReply}
 import ws.{WsConnection, WsInPacket}
 
 import cats.effect.IO
@@ -18,12 +18,13 @@ import org.http4s.circe.CirceEntityEncoder.*
 import java.nio.ByteBuffer
 
 case class InPacketDataRequestReply(request_id: String, typ: DataRequestReply) extends WsInPacket {
-  override def handle(conn: WsConnection): IO[Unit] = for {
-    request <- conn.repos.dataRequests.get(conn.connector.appId, request_id).orNotFound
-      .flatTap(_.connectors.contains(conn.connector.id).orBadRequest("Request does not contain this connector"))
-      .map(_.withReply(conn.connector, typ))
+  override def handle(conn: WsConnection, coOpt: Option[Connector]): IO[Unit] = for {
+    co <- coOpt.orBadRequest("Missing connector context")
+    request <- conn.repos.dataRequests.get(co.appId, request_id).orNotFound
+      .flatTap(_.connectors.contains(co.id).orBadRequest("Request does not contain this connector"))
+      .map(_.withReply(co, typ))
     _ <- conn.repos.dataRequests.set(request)
-    _ <- request.tryCallback(conn.repos, conn.connector)
+    _ <- request.tryCallback(conn.repos, co)
   } yield ()
 }
 

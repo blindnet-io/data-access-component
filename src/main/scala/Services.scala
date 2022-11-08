@@ -1,12 +1,12 @@
 package io.blindnet.dataaccess
 
 import endpoints.*
+import endpoints.auth.JwtAppAuthenticator
 import models.App
 import services.*
 
 import cats.effect.IO
 import dev.profunktor.redis4cats.RedisCommands
-import io.blindnet.dataaccess.endpoints.auth.JwtAppAuthenticator
 import io.blindnet.identityclient.IdentityClient
 import io.blindnet.identityclient.auth.*
 import org.http4s.HttpRoutes
@@ -22,9 +22,9 @@ class Services(repos: Repositories, connectorService: ConnectorService, identity
   private val requestService = RequestService(connectorService, repos)
 
   private val appAuthenticator = StAuthenticator(repos.apps)
+  private val connectorAuthenticator = StAuthenticator(repos.connectors)
   private val jwtAuthenticator = JwtAuthenticator(identityClient)
   private val jwtAppAuthenticator = JwtAppAuthenticator(repos, configurationService, jwtAuthenticator)
-  private val connectorAuthenticator = StAuthenticator(repos.connectors)
 
   private val configurationEndpoints = ConfigurationEndpoints(jwtAppAuthenticator, configurationService)
   private val connectorEndpoints = ConnectorEndpoints(connectorAuthenticator, connectorService)

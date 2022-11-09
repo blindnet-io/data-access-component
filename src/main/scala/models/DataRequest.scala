@@ -37,8 +37,13 @@ case class DataRequest(
   def dataUrl(dataId: String) = s"${Env.get.baseUrl}/v1/data/${dataPath(dataId)}"
 
   def hasCompleteReply(connector: Connector, mainDataSent: Boolean): Boolean =
-    replies.contains(connector.id) && (action == DataRequestAction.DELETE ||
-      (action == DataRequestAction.GET && dataIds.contains(connector.id) && mainDataSent)
+    replies.contains(connector.id) && (
+      replies(connector.id) == DataRequestReply.DENY ||
+      action == DataRequestAction.DELETE || (
+        action == DataRequestAction.GET &&
+        dataIds.contains(connector.id) &&
+        mainDataSent
+      )
     )
 
   /**

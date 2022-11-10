@@ -14,7 +14,7 @@ import java.util.UUID
 
 class ConnectorRepository(xa: Transactor[IO]) extends StRepository[Connector, IO] {
   def findById(appId: UUID, id: UUID): IO[Option[Connector]] =
-    sql"select id, app_id, name, type, config token from connectors where app_id=$appId and id=$id"
+    sql"select id, app_id, name, type, config, token from connectors where app_id=$appId and id=$id"
       .query[Connector].option.transact(xa)
     
   override def findByToken(token: String): IO[Option[Connector]] =

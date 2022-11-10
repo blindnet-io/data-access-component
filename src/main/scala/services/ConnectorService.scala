@@ -34,7 +34,7 @@ case class ConnectorService(repos: Repositories, state: WsState) {
       (for {
         appId <- EitherT.fromOption[IO](appOpt, "Missing X-Application-ID header")
           .flatMap(raw => EitherT.fromOption[IO](Try(UUID.fromString(raw)).toOption, "Invalid application ID"))
-        coId <- EitherT.fromOption[IO](appOpt, "Missing X-Connector-ID header")
+        coId <- EitherT.fromOption[IO](coOpt, "Missing X-Connector-ID header")
           .flatMap(raw => EitherT.fromOption[IO](Try(UUID.fromString(raw)).toOption, "Invalid connector ID"))
         co <- EitherT.fromOptionF(repos.connectors.findById(appId, coId), "Connector not found")
       } yield co).value

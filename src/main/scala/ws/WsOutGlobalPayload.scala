@@ -9,6 +9,7 @@ import java.util.UUID
 case class WsOutGlobalPayload[T <: WsOutPacket](
   app_id: UUID,
   connector_id: UUID,
+  connector_name: String,
   connector_type: String,
   connector_config: Option[String],
   typ: String,
@@ -16,8 +17,8 @@ case class WsOutGlobalPayload[T <: WsOutPacket](
 )
 
 object WsOutGlobalPayload {
-  def apply[T <: WsOutPacket](app_id: UUID, connector_id: UUID, connector_type: String, connector_config: Option[String], packet: T): WsOutGlobalPayload[T] =
-    new WsOutGlobalPayload(app_id, connector_id, connector_type, connector_config, packet.typ, packet)
+  def apply[T <: WsOutPacket](app_id: UUID, connector_id: UUID, connector_name: String, connector_type: String, connector_config: Option[String], packet: T): WsOutGlobalPayload[T] =
+    new WsOutGlobalPayload(app_id, connector_id, connector_name, connector_type, connector_config, packet.typ, packet)
 }
 
 implicit def eWsOutGlobalPayload[T <: WsOutPacket](implicit encoder: Encoder[T]): Encoder[WsOutGlobalPayload[T]] =

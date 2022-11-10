@@ -63,7 +63,7 @@ case class WsConnection(repos: Repositories, connector: Option[Connector], queue
     queue.offer(WsOutPayload(packet).asJson.noSpaces)
 
   def sendGlobal[T <: WsOutPacket](connector: Connector, packet: T)(implicit enc: Encoder[T]): IO[Unit] =
-    queue.offer(WsOutGlobalPayload(connector.appId, connector.id, connector.typ.get, connector.config, packet).asJson.noSpaces)
+    queue.offer(WsOutGlobalPayload(connector.appId, connector.id, connector.name, connector.typ.get, connector.config, packet).asJson.noSpaces)
 }
 
 object WsConnection {

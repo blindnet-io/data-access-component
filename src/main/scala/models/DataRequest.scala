@@ -56,7 +56,8 @@ case class DataRequest(
       _ <- BlazeClientBuilder[IO].resource.use(_.successful(Request[IO](
         Method.POST,
         callback,
-      ).withEntity(DataCallbackPayload(appId, id, LightConnectorPayload(connector.id, connector.name, connector.typ), replies(connector.id) == DataRequestReply.ACCEPT, dataIds.get(connector.id).map(dataUrl)))))
+      ).withEntity(DataCallbackPayload(appId, id, LightConnectorPayload(connector.id, connector.name),
+        replies(connector.id) == DataRequestReply.ACCEPT, dataIds.get(connector.id).map(dataUrl)))))
       _ <- repos.dataRequests.delete(appId, id)
     } yield ()
     else IO.unit

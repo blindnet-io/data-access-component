@@ -1,7 +1,7 @@
 package io.blindnet.dataaccess
 package ws
 
-import models.Connector
+import models.{Connector, CustomConnector, GlobalConnector}
 import redis.DataRequestRepository
 import ws.*
 
@@ -17,7 +17,7 @@ import java.nio.ByteBuffer
 import java.util.UUID
 import scala.util.Try
 
-case class WsConnection(repos: Repositories, connector: Option[Connector], queue: Queue[IO, String]) {
+case class WsConnection(repos: Repositories, connector: Option[CustomConnector], queue: Queue[IO, String]) {
   def pipe(onTerminate: IO[Unit]): Pipe[IO, String, String] = (in: Stream[IO, String]) => {
     // noneTerminate should theoretically be enough to detect disconnects, but the Stream will actually fail
     // with an EOF error and therefore not emit a None.
@@ -62,11 +62,11 @@ case class WsConnection(repos: Repositories, connector: Option[Connector], queue
   def send[T <: WsOutPacket](packet: T)(implicit enc: Encoder[T]): IO[Unit] =
     queue.offer(WsOutPayload(packet).asJson.noSpaces)
 
-  def sendGlobal[T <: WsOutPacket](connector: Connector, packet: T)(implicit enc: Encoder[T]): IO[Unit] =
-    queue.offer(WsOutGlobalPayload(connector.appId, connector.id, connector.name, connector.typ.get, connector.config, packet).asJson.noSpaces)
+  def sendGlobal[T <: WsOutPacket](connector: GlobalConnector, packet: T)(implicit enc: Encoder[T]): IO[Unit] =
+    queue.offer(WsOutGlobalPayload(connector.appId, connector.id, connector.name, connector.typ, connector.config, packet).asJson.noSpaces)
 }
 
 object WsConnection {
-  def apply(repos: Repositories, connector: Option[Connector]): IO[WsConnection] =
+  def apply(repos: Repositories, connector: Option[CustomConnector]): IO[WsConnection] =
     Queue.unbounded[IO, String].map(new WsConnection(repos, connector, _))
 }

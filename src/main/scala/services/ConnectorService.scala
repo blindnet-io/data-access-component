@@ -1,15 +1,13 @@
 package io.blindnet.dataaccess
 package services
 
-import endpoints.auth.ConnectorAuthenticator
 import azure.AzureStorage
+import endpoints.auth.ConnectorAuthenticator
 import endpoints.objects.DataCallbackPayload
 import errors.*
-import models.DataRequestAction
-import models.DataRequestReply
-import models.Connector
-import ws.{WsConnTracker, WsConnection, WsState}
+import models.{Connector, CustomConnector, DataRequestAction, DataRequestReply}
 import ws.packets.out.OutPacketWelcome
+import ws.{WsConnTracker, WsConnection, WsState}
 
 import cats.data.EitherT
 import cats.effect.*
@@ -40,7 +38,7 @@ case class ConnectorService(repos: Repositories, state: WsState) {
       } yield co).value
     else authenticator.authenticateHeader(authOpt)
 
-  def wsCustom(co: Connector)(x: Unit): IO[Pipe[IO, String, String]] =
+  def wsCustom(co: CustomConnector)(x: Unit): IO[Pipe[IO, String, String]] =
     for {
       conn <- WsConnection(repos, Some(co))
       _ <- conn.send(OutPacketWelcome(co.appId, co.id, co.name))

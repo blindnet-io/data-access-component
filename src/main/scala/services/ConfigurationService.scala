@@ -30,30 +30,36 @@ class ConfigurationService(repos: Repositories) {
     for {
       id <- uuidGen.randomUUID
       token <- generateStaticToken()
-      co = Connector(id, app.id, payload.name, payload.typ, payload.config, token)
+      co = payload.typ match
+        case Some(typ) => GlobalConnector(id, app.id, payload.name, typ, payload.config)
+        case None => CustomConnector(id, app.id, payload.name, token)
       _ <- repos.connectors.insert(co)
-    } yield ConnectorPayload(co.id, co.name, co.typ, co.config)
+    } yield ConnectorPayload(co)
 
   def getConnectors(app: App)(x: Unit): IO[List[ConnectorPayload]] =
     for {
       connectors <- repos.connectors.findAllByApp(app.id)
-    } yield connectors.map(co => ConnectorPayload(co.id, co.name, co.typ, co.config))
+    } yield connectors.map(ConnectorPayload(_))
 
   def getConnector(app: App)(id: UUID): IO[ConnectorPayload] =
     for {
       co <- repos.connectors.findById(app.id, id).orNotFound
-    } yield ConnectorPayload(co.id, co.name, co.typ, co.config)
+    } yield ConnectorPayload(co)
 
   def getConnectorToken(app: App)(id: UUID): IO[String] =
     for {
       co <- repos.connectors.findById(app.id, id).orNotFound
-      _ <- co.typ.thenBadRequest("Not a custom connector")
-    } yield co.token
+      token <- co match
+        case _: GlobalConnector => IO.raiseError(BadRequestException("Not a custom connector"))
+        case CustomConnector(_, _, _, token) => IO.pure(token)
+    } yield token
 
   def resetConnectorToken(app: App)(id: UUID): IO[String] =
     for {
       co <- repos.connectors.findById(app.id, id).orNotFound
-      _ <- co.typ.thenBadRequest("Not a custom connector")
+      _ <- co match
+        case _: GlobalConnector => IO.raiseError(BadRequestException("Not a custom connector"))
+        case _: CustomConnector => IO.unit
       token <- generateStaticToken()
       _ <- repos.connectors.updateToken(app.id, id, token)
     } yield token

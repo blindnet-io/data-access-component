@@ -9,10 +9,9 @@ import java.util.UUID
 case class LightConnectorPayload(
   id: UUID,
   name: String,
-  typ: Option[String],
 )
 
 object LightConnectorPayload {
   given Encoder[LightConnectorPayload] = Encoder
-    .forProduct3("id", "name", "type")(p => (p.id, p.name, p.typ))
+    .forProduct2("id", "name")(p => (p.id, p.name))
 }

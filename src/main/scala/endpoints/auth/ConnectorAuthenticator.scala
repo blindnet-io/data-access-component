@@ -1,8 +1,8 @@
 package io.blindnet.dataaccess
 package endpoints.auth
 
-import models.Connector
+import models.CustomConnector
 
 import io.blindnet.identityclient.auth.StAuthenticator
 
-type ConnectorAuthenticator = StAuthenticator[Connector, Connector]
+type ConnectorAuthenticator = StAuthenticator[CustomConnector, CustomConnector]

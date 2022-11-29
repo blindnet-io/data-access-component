@@ -26,6 +26,9 @@ class ConfigurationService(repos: Repositories) {
       _ <- repos.apps.updateToken(app.id, token)
     } yield token
 
+  def getConnectorTypes(app: App)(x: Unit): IO[List[String]] =
+    repos.connectors.findAllTypes()
+
   def createConnector(app: App)(payload: CreateConnectorPayload): IO[ConnectorPayload] =
     for {
       id <- uuidGen.randomUUID

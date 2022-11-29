@@ -31,6 +31,13 @@ class ConfigurationEndpoints(authenticator: JwtAppAuthenticator, service: Config
       .in("token" / "reset")
       .out(jsonBody[String])
       .serverLogicSuccess(service.resetToken)
+  
+  val getConnectorTypes: ApiEndpoint =
+    base.summary("Get supported connector types")
+      .get
+      .in("connectors" / "types")
+      .out(jsonBody[List[String]])
+      .serverLogicSuccess(service.getConnectorTypes)
 
   val createConnector: ApiEndpoint =
     base.summary("Create a connector")
@@ -71,6 +78,7 @@ class ConfigurationEndpoints(authenticator: JwtAppAuthenticator, service: Config
   val list: List[ApiEndpoint] = List(
     getToken,
     resetToken,
+    getConnectorTypes,
     createConnector,
     getConnectors,
     getConnector,

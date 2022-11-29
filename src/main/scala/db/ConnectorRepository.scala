@@ -20,6 +20,10 @@ class ConnectorRepository(xa: Transactor[IO]) extends StRepository[CustomConnect
         .query[Int].unique.transact(xa)
       case None => IO.pure(0)
 
+  def findAllTypes(): IO[List[String]] =
+    sql"select id from connector_types"
+      .query[String].to[List].transact(xa)
+
   def findById(appId: UUID, id: UUID): IO[Option[Connector]] =
     sql"select id, app_id, name, type, config, token from connectors where app_id=$appId and id=$id"
       .query[Connector].option.transact(xa)

@@ -29,7 +29,7 @@ class ConnectorRepository(xa: Transactor[IO]) extends StRepository[CustomConnect
       .query[Connector].option.transact(xa)
 
   override def findByToken(token: String): IO[Option[CustomConnector]] =
-    sql"select id, app_id, name, type, config, token from connectors where token=$token"
+    sql"select id, app_id, name, token from connectors where token=$token"
       .query[CustomConnector].option.transact(xa)
 
   def findAllByApp(appId: UUID): IO[List[Connector]] =

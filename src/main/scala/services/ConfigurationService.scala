@@ -29,10 +29,12 @@ class ConfigurationService(repos: Repositories) {
   def createConnector(app: App)(payload: CreateConnectorPayload): IO[ConnectorPayload] =
     for {
       id <- uuidGen.randomUUID
-      token <- generateStaticToken()
-      co = payload.typ match
-        case Some(typ) => GlobalConnector(id, app.id, payload.name, typ, payload.config)
-        case None => CustomConnector(id, app.id, payload.name, token)
+      co <- payload.typ match
+        case Some(typ) => for {
+          _ <- repos.connectors.countTypesByIds(List(typ))
+            .map(_ == 1).flatMap(_.orBadRequest("Unknown connector type"))
+        } yield GlobalConnector(id, app.id, payload.name, typ, payload.config)
+        case None => generateStaticToken().map(CustomConnector(id, app.id, payload.name, _))
       _ <- repos.connectors.insert(co)
     } yield ConnectorPayload(co)
 

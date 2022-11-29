@@ -64,6 +64,6 @@ case class DataRequest(
 }
 
 object DataRequest {
-  implicit val encoder: Encoder[DataRequest] = deriveEncoder[DataRequest]
-  implicit val decoder: Decoder[DataRequest] = deriveDecoder[DataRequest]
+  given Encoder[DataRequest] = deriveEncoder[DataRequest]
+  given Decoder[DataRequest] = deriveDecoder[DataRequest]
 }

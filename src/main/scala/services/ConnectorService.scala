@@ -24,7 +24,7 @@ import java.util.UUID
 import scala.util.Try
 
 case class ConnectorService(repos: Repositories, state: WsState) {
-  implicit val uuidGen: UUIDGen[IO] = UUIDGen.fromSync
+  given UUIDGen[IO] = UUIDGen.fromSync
 
   def dualAuth(authenticator: ConnectorAuthenticator)
               (authOpt: Option[String], appOpt: Option[String], coOpt: Option[String]): IO[Either[String, Connector]] =

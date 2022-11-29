@@ -12,4 +12,6 @@ case class OutPacketDataRequest(request: DataRequestPayload) extends WsOutPacket
   override def typ: String = "data_request"
 }
 
-implicit val eOutPacketDataQuery: Encoder[OutPacketDataRequest] = deriveEncoder[OutPacketDataRequest]
+object OutPacketDataRequest {
+  given Encoder[OutPacketDataRequest] = deriveEncoder[OutPacketDataRequest]
+}

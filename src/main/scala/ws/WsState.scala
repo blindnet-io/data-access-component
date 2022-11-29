@@ -41,7 +41,7 @@ class WsState(
   def globalConnection(typ: String): IO[GlobalWsConnection] =
     global.get.map(_.get(typ).flatMap(_.get).get)
 
-  def send[T <: WsOutPacket](co: Connector, packet: T)(implicit enc: Encoder[T]): IO[Unit] =
+  def send[T <: WsOutPacket](co: Connector, packet: T)(using Encoder[T]): IO[Unit] =
     co match
       case global: GlobalConnector => globalConnection(global.typ).flatMap(_.send(global, packet))
       case custom: CustomConnector => customConnection(custom).flatMap(_.send(packet))

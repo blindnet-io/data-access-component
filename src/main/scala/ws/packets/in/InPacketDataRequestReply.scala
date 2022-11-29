@@ -28,6 +28,6 @@ case class InPacketDataRequestReply(request_id: String, typ: DataRequestReply) e
 }
 
 object InPacketDataRequestReply {
-  implicit val decoder: Decoder[InPacketDataRequestReply] =
+  given decoder: Decoder[InPacketDataRequestReply] =
     Decoder.forProduct2("request_id", "type")(InPacketDataRequestReply.apply)
 }

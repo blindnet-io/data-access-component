@@ -8,6 +8,6 @@ case class WsOutPayload[T <: WsOutPacket](typ: String, data: T)
 
 object WsOutPayload {
   def apply[T <: WsOutPacket](packet: T): WsOutPayload[T] = new WsOutPayload(packet.typ, packet)
+  
+  given [T <: WsOutPacket](using Encoder[T]): Encoder[WsOutPayload[T]] = deriveEncoder[WsOutPayload[T]]
 }
-
-implicit def eWsOutPayload[T <: WsOutPacket](implicit encoder: Encoder[T]): Encoder[WsOutPayload[T]] = deriveEncoder[WsOutPayload[T]]

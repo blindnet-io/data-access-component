@@ -15,5 +15,5 @@ case class DataCallbackPayload(
 )
 
 object DataCallbackPayload {
-  implicit val encoder: Encoder[DataCallbackPayload] = deriveEncoder[DataCallbackPayload]
+  given Encoder[DataCallbackPayload] = deriveEncoder[DataCallbackPayload]
 }

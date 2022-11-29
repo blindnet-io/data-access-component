@@ -40,7 +40,7 @@ sealed trait WsConnection {
     )
   }
 
-  def send[T <: WsOutPacket](packet: T)(implicit enc: Encoder[T]): IO[Unit] =
+  def send[T <: WsOutPacket](packet: T)(using Encoder[T]): IO[Unit] =
     queue.offer(WsOutPayload(packet).asJson.noSpaces)
 
   protected def parsePacket[T <: WsInPacket](raw: String): Option[(T, Option[(UUID, UUID)])] =
@@ -78,7 +78,7 @@ case class GlobalWsConnection(repos: Repositories, types: List[String], queue: Q
       )
       case None => IO.println("ignoring invalid WS packet")
 
-  def send[T <: WsOutPacket](connector: GlobalConnector, packet: T)(implicit enc: Encoder[T]): IO[Unit] =
+  def send[T <: WsOutPacket](connector: GlobalConnector, packet: T)(using Encoder[T]): IO[Unit] =
     queue.offer(WsOutGlobalPayload(connector.appId, connector.id, connector.name, connector.typ, connector.config, packet).asJson.noSpaces)
 }
 

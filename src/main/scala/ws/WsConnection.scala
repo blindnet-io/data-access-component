@@ -8,6 +8,7 @@ import ws.*
 import cats.data.*
 import cats.effect.*
 import cats.effect.std.Queue
+import cats.implicits.*
 import fs2.{Pipe, Stream}
 import io.circe.*
 import io.circe.parser.*
@@ -53,8 +54,7 @@ sealed trait WsConnection {
       packet <- payload("data").flatMap(_.as[T](decoder.asInstanceOf[Decoder[T]]).toOption)
     } yield (packet,
       payload("app_id").flatMap(parseUUID)
-        .flatMap(appId => payload("connector_id").flatMap(parseUUID)
-          .map((appId, _))))
+        .product(payload("connector_id").flatMap(parseUUID)))
 }
 
 case class CustomWsConnection(repos: Repositories, connector: CustomConnector, queue: Queue[IO, String]) extends WsConnection {

@@ -10,51 +10,47 @@ import io.circe.Encoder
 
 import java.util.UUID
 
-class WsState(
-  private val custom: Ref[IO, Map[UUID, WsConnTracker]],
-  private val global: Ref[IO, WsConnTracker],
-) {
-  private def customTracker(co: CustomConnector): IO[WsConnTracker] =
-    for {
-      existing <- custom.get.map(_.get(co.id))
-      tracker <- existing match
-        case Some(value) => IO.pure(value)
-        case None =>
-          val newTracker = WsConnTracker()
-          custom.update(_ + (co.id -> newTracker)).as(newTracker)
-    } yield tracker
-    
-  private def updateCustomTracker(co: CustomConnector, f: WsConnTracker => WsConnTracker): IO[Unit] =
-    custom.update(map => map + (co.id -> f(map.getOrElse(co.id, WsConnTracker()))))
+type CustomTracker = WsConnTracker[CustomWsConnection]
+type GlobalTracker = WsConnTracker[GlobalWsConnection]
 
-  def addCustomConnection(co: CustomConnector, conn: WsConnection): IO[Unit] =
+class WsState(
+  private val custom: Ref[IO, Map[UUID, CustomTracker]],
+  private val global: Ref[IO, Map[String, GlobalTracker]],
+) {
+  private def updateCustomTracker(co: CustomConnector, f: CustomTracker => CustomTracker): IO[Unit] =
+    custom.update(map => map + (co.id -> f(map.getOrElse(co.id, WsConnTracker[CustomWsConnection]()))))
+
+  private def updateGlobalTrackers(conn: GlobalWsConnection, f: GlobalTracker => GlobalTracker): IO[Unit] =
+    global.update(conn.types.foldLeft(_)((map, typ) => map + (typ -> f(map.getOrElse(typ, WsConnTracker[GlobalWsConnection]())))))
+
+  def addCustomConnection(co: CustomConnector, conn: CustomWsConnection): IO[Unit] =
     updateCustomTracker(co, _.add(conn))
 
-  def addGlobalConnection(conn: WsConnection): IO[Unit] =
-    global.update(_.add(conn))
+  def addGlobalConnection(conn: GlobalWsConnection): IO[Unit] =
+    updateGlobalTrackers(conn, _.add(conn))
 
-  def removeCustomConnection(co: CustomConnector, conn: WsConnection): IO[Unit] =
+  def removeCustomConnection(co: CustomConnector, conn: CustomWsConnection): IO[Unit] =
     updateCustomTracker(co, _.remove(conn))
 
-  def removeGlobalConnection(conn: WsConnection): IO[Unit] =
-    global.update(_.remove(conn))
+  def removeGlobalConnection(conn: GlobalWsConnection): IO[Unit] =
+    updateGlobalTrackers(conn, _.remove(conn))
 
-  def customConnection(co: CustomConnector): IO[WsConnection] =
-    customTracker(co).map(_.get.get)
+  def customConnection(co: CustomConnector): IO[CustomWsConnection] =
+    custom.get.map(_.get(co.id).flatMap(_.get).get)
 
-  def globalConnection(): IO[WsConnection] =
-    global.get.map(_.get.get)
+  def globalConnection(typ: String): IO[GlobalWsConnection] =
+    global.get.map(_.get(typ).flatMap(_.get).get)
 
   def send[T <: WsOutPacket](co: Connector, packet: T)(implicit enc: Encoder[T]): IO[Unit] =
     co match
-      case global: GlobalConnector => globalConnection().flatMap(_.sendGlobal(global, packet))
+      case global: GlobalConnector => globalConnection(global.typ).flatMap(_.send(global, packet))
       case custom: CustomConnector => customConnection(custom).flatMap(_.send(packet))
 }
 
 object WsState {
   def apply(): IO[WsState] =
     for {
-      custom <- Ref[IO].of[Map[UUID, WsConnTracker]](Map.empty)
-      global <- Ref[IO].of[WsConnTracker](WsConnTracker())
+      custom <- Ref[IO].of[Map[UUID, CustomTracker]](Map.empty)
+      global <- Ref[IO].of[Map[String, GlobalTracker]](Map.empty)
     } yield new WsState(custom, global)
 }

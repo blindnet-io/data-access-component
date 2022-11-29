@@ -7,7 +7,7 @@ import endpoints.objects.DataCallbackPayload
 import errors.*
 import models.{Connector, CustomConnector, DataRequestAction, DataRequestReply}
 import ws.packets.out.OutPacketWelcome
-import ws.{WsConnTracker, WsConnection, WsState}
+import ws.*
 
 import cats.data.EitherT
 import cats.effect.*
@@ -40,14 +40,17 @@ case class ConnectorService(repos: Repositories, state: WsState) {
 
   def wsCustom(co: CustomConnector)(x: Unit): IO[Pipe[IO, String, String]] =
     for {
-      conn <- WsConnection(repos, Some(co))
+      conn <- CustomWsConnection(repos, co)
       _ <- conn.send(OutPacketWelcome(co.appId, co.id, co.name))
       _ <- state.addCustomConnection(co, conn)
     } yield conn.pipe(state.removeCustomConnection(co, conn))
 
-  def wsGlobal(x: Unit)(y: Unit): IO[Pipe[IO, String, String]] =
+  def wsGlobal(x: Unit)(typesHeader: String): IO[Pipe[IO, String, String]] =
+    val types = typesHeader.split(',').toList.distinct
     for {
-      conn <- WsConnection(repos, None)
+      _ <- repos.connectors.countTypesByIds(types)
+        .map(_ == types.length).flatMap(_.orBadRequest("Unknown connector type"))
+      conn <- GlobalWsConnection(repos, types)
       _ <- conn.send(OutPacketWelcome())
       _ <- state.addGlobalConnection(conn)
     } yield conn.pipe(state.removeGlobalConnection(conn))

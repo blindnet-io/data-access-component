@@ -36,6 +36,7 @@ class ConnectorEndpoints(authenticator: ConnectorAuthenticator, service: Connect
     globalBase.summary("Establish WebSocket connection (global connector)")
       .get
       .in("ws" / "global")
+      .in(header[String]("X-Connector-Types"))
       .out(webSocketBody[String, CodecFormat.TextPlain, String, CodecFormat.TextPlain](Fs2Streams[IO]))
       .serverLogicSuccess(service.wsGlobal)
 

@@ -18,8 +18,7 @@ import org.http4s.circe.CirceEntityEncoder.*
 import java.nio.ByteBuffer
 
 case class InPacketDataRequestReply(request_id: String, typ: DataRequestReply) extends WsInPacket {
-  override def handle(conn: WsConnection, coOpt: Option[Connector]): IO[Unit] = for {
-    co <- coOpt.orBadRequest("Missing connector context")
+  override def handle(conn: WsConnection, co: Connector): IO[Unit] = for {
     request <- conn.repos.dataRequests.get(co.appId, request_id).orNotFound
       .flatTap(_.connectors.contains(co.id).orBadRequest("Request does not contain this connector"))
       .map(_.withReply(co, typ))

@@ -3,6 +3,7 @@ package db
 
 import models.{Connector, CustomConnector}
 
+import cats.data.NonEmptyList
 import cats.effect.*
 import doobie.*
 import doobie.implicits.*
@@ -13,10 +14,16 @@ import io.blindnet.identityclient.auth.StRepository
 import java.util.UUID
 
 class ConnectorRepository(xa: Transactor[IO]) extends StRepository[CustomConnector, IO] {
+  def countTypesByIds(ids: List[String]): IO[Int] =
+    NonEmptyList.fromList(ids) match
+      case Some(nel) => (fr"select count(*) from connector_types where" ++ Fragments.in(fr"id", nel))
+        .query[Int].unique.transact(xa)
+      case None => IO.pure(0)
+
   def findById(appId: UUID, id: UUID): IO[Option[Connector]] =
     sql"select id, app_id, name, type, config, token from connectors where app_id=$appId and id=$id"
       .query[Connector].option.transact(xa)
-    
+
   override def findByToken(token: String): IO[Option[CustomConnector]] =
     sql"select id, app_id, name, type, config, token from connectors where token=$token"
       .query[CustomConnector].option.transact(xa)

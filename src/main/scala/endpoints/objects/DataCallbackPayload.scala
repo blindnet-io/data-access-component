@@ -9,11 +9,11 @@ import java.util.UUID
 case class DataCallbackPayload(
   app_id: UUID,
   request_id: String,
-  namespace: NamespacePayload,
+  connector: LightConnectorPayload,
   accepted: Boolean,
   data_url: Option[String] = None,
 )
 
 object DataCallbackPayload {
-  implicit val encoder: Encoder[DataCallbackPayload] = deriveEncoder[DataCallbackPayload]
+  given Encoder[DataCallbackPayload] = deriveEncoder[DataCallbackPayload]
 }

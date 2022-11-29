@@ -1,13 +1,13 @@
 package io.blindnet.dataaccess
 package ws
 
-case class WsConnTracker(connections: Vector[WsConnection] = Vector.empty) {
+case class WsConnTracker[T <: WsConnection](connections: Vector[T] = Vector.empty[T]) {
   private val roundRobin = Iterator.continually(connections).flatten
-  def get: Option[WsConnection] = roundRobin.nextOption()
+  def get: Option[T] = roundRobin.nextOption()
   
-  def add(connection: WsConnection): WsConnTracker =
+  def add(connection: T): WsConnTracker[T] =
     copy(connections = connections.appended(connection))
 
-  def remove(connection: WsConnection): WsConnTracker =
+  def remove(connection: T): WsConnTracker[T] =
     copy(connections = connections.filterNot(_ == connection))
 }

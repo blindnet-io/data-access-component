@@ -1,7 +1,7 @@
 package io.blindnet.dataaccess
 package endpoints.auth
 
-import models.{App, Namespace}
+import models.{App, Connector}
 import services.ConfigurationService
 
 import cats.effect.IO
@@ -11,7 +11,6 @@ import io.blindnet.identityclient.auth.*
 type JwtAppAuthenticator = JwtAuthenticator[App]
 
 object JwtAppAuthenticator {
-  val uuidGen: UUIDGen[IO] = UUIDGen.fromSync
 
   def apply(repos: Repositories, configurationService: ConfigurationService, authenticator: JwtAuthenticator[Jwt]): JwtAppAuthenticator =
     authenticator.requireAppJwt.mapJwtF(jwt =>
@@ -21,10 +20,5 @@ object JwtAppAuthenticator {
           appToken <- configurationService.generateStaticToken()
           app = App(jwt.appId, appToken)
           _ <- repos.apps.insert(app)
-
-          nsId <- uuidGen.randomUUID
-          nsToken <- configurationService.generateStaticToken()
-          ns = Namespace(nsId, app.id, "Default", nsToken)
-          _ <- repos.namespaces.insert(ns)
         } yield app))
 }

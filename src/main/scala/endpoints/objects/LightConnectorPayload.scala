@@ -6,11 +6,12 @@ import io.circe.generic.semiauto.*
 
 import java.util.UUID
 
-case class NamespacePayload(
+case class LightConnectorPayload(
   id: UUID,
   name: String,
 )
 
-object NamespacePayload {
-  given Encoder[NamespacePayload] = deriveEncoder[NamespacePayload]
+object LightConnectorPayload {
+  given Encoder[LightConnectorPayload] = Encoder
+    .forProduct2("id", "name")(p => (p.id, p.name))
 }

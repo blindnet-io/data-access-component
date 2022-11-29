@@ -9,9 +9,9 @@ enum DataRequestAction {
 
 object DataRequestAction {
   private val byLowerName = DataRequestAction.values.map(e => (e.toString.toLowerCase, e)).toMap
-  implicit val decoder: Decoder[DataRequestAction] =
+  given Decoder[DataRequestAction] =
     Decoder.decodeString.emap[DataRequestAction](k =>
       byLowerName.get(k.toLowerCase).toRight("illegal DataRequestAction value"))
-  implicit val encoder: Encoder[DataRequestAction] =
+  given Encoder[DataRequestAction] =
     Encoder.encodeString.contramap(_.toString.toLowerCase)
 }

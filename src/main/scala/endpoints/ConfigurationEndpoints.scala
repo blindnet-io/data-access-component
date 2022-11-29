@@ -31,41 +31,58 @@ class ConfigurationEndpoints(authenticator: JwtAppAuthenticator, service: Config
       .in("token" / "reset")
       .out(jsonBody[String])
       .serverLogicSuccess(service.resetToken)
-
-  val getNamespaces: ApiEndpoint =
-    base.summary("Get the namespaces defined for this app")
+  
+  val getConnectorTypes: ApiEndpoint =
+    base.summary("Get supported connector types")
       .get
-      .in("namespaces")
-      .out(jsonBody[List[NamespacePayload]])
-      .serverLogicSuccess(service.getNamespaces)
+      .in("connectors" / "types")
+      .out(jsonBody[List[String]])
+      .serverLogicSuccess(service.getConnectorTypes)
 
-  val getNamespace: ApiEndpoint =
-    base.summary("Get information about a namespace")
-      .get
-      .in("namespaces" / path[UUID]("namespace"))
-      .out(jsonBody[NamespacePayload])
-      .serverLogicSuccess(service.getNamespace)
-
-  val getNamespaceToken: ApiEndpoint =
-    base.summary("Get the current API token for a namespace")
-      .get
-      .in("namespaces" / path[UUID]("namespace") / "token")
-      .out(jsonBody[String])
-      .serverLogicSuccess(service.getNamespaceToken)
-
-  val resetNamespaceToken: ApiEndpoint =
-    base.summary("Invalidate the current API token of a namespace and create a new one")
+  val createConnector: ApiEndpoint =
+    base.summary("Create a connector")
       .post
-      .in("namespaces" / path[UUID]("namespace") / "token" / "reset")
+      .in("connectors")
+      .in(jsonBody[CreateConnectorPayload])
+      .out(jsonBody[ConnectorPayload])
+      .serverLogicSuccess(service.createConnector)
+
+  val getConnectors: ApiEndpoint =
+    base.summary("Get the connectors defined for this app")
+      .get
+      .in("connectors")
+      .out(jsonBody[List[ConnectorPayload]])
+      .serverLogicSuccess(service.getConnectors)
+
+  val getConnector: ApiEndpoint =
+    base.summary("Get information about a connector")
+      .get
+      .in("connectors" / path[UUID]("connector"))
+      .out(jsonBody[ConnectorPayload])
+      .serverLogicSuccess(service.getConnector)
+
+  val getConnectorToken: ApiEndpoint =
+    base.summary("Get the current API token for a connector")
+      .get
+      .in("connectors" / path[UUID]("connector") / "token")
       .out(jsonBody[String])
-      .serverLogicSuccess(service.resetNamespaceToken)
+      .serverLogicSuccess(service.getConnectorToken)
+
+  val resetConnectorToken: ApiEndpoint =
+    base.summary("Invalidate the current API token of a connector and create a new one")
+      .post
+      .in("connectors" / path[UUID]("connector") / "token" / "reset")
+      .out(jsonBody[String])
+      .serverLogicSuccess(service.resetConnectorToken)
 
   val list: List[ApiEndpoint] = List(
     getToken,
     resetToken,
-    getNamespaces,
-    getNamespace,
-    getNamespaceToken,
-    resetNamespaceToken
+    getConnectorTypes,
+    createConnector,
+    getConnectors,
+    getConnector,
+    getConnectorToken,
+    resetConnectorToken
   )
 }

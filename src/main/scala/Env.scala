@@ -22,6 +22,8 @@ abstract class Env() {
   lazy val dbUri: String
   lazy val dbUsername: String
   lazy val dbPassword: String
+  
+  val advancedLogging: Boolean = false
 
   val identityUrl: Uri = sys.env.get("BN_IDENTITY_URL")
     .map(Uri.fromString.andThen(_.getOrElse(throw RuntimeException("BN_IDENTITY_URL is not an URI"))))
@@ -54,6 +56,8 @@ class DevelopmentEnv() extends StagingEnv {
   override lazy val dbUri: String = sys.env.getOrElse("BN_DB_URI", "jdbc:postgresql://127.0.0.1/dac")
   override lazy val dbUsername: String = sys.env.getOrElse("BN_DB_USER", "dac")
   override lazy val dbPassword: String = sys.env.getOrElse("BN_DB_PASSWORD", "dac")
+  
+  override val advancedLogging: Boolean = true
 
   // Fake values for testing purposes
   override lazy val azureStorageAccountName: String = sys.env.getOrElse("BN_AZURE_STORAGE_ACC_NAME", "account_name")

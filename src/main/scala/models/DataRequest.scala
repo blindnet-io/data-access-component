@@ -11,6 +11,8 @@ import org.http4s.*
 import org.http4s.blaze.client.BlazeClientBuilder
 import org.http4s.circe.*
 import org.http4s.circe.CirceEntityEncoder.*
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 import java.util.UUID
 
@@ -53,6 +55,8 @@ case class DataRequest(
   def tryCallback(repos: Repositories, connector: Connector, mainDataSent: Boolean = false): IO[Unit] =
     if hasCompleteReply(connector, mainDataSent)
     then for {
+      logger <- Slf4jLogger.create[IO]
+      _ <- logger.info(s"Calling callback for $appId/$id")
       _ <- BlazeClientBuilder[IO].resource.use(_.successful(Request[IO](
         Method.POST,
         callback,

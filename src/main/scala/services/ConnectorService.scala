@@ -17,13 +17,15 @@ import fs2.concurrent.*
 import jdk.jshell.spi.ExecutionControl.NotImplementedException
 import org.http4s.*
 import org.http4s.blaze.client.*
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import sttp.model.StatusCode
 
 import java.nio.ByteBuffer
 import java.util.UUID
 import scala.util.Try
 
-case class ConnectorService(repos: Repositories, state: WsState) {
+case class ConnectorService(repos: Repositories, state: WsState, logger: Logger[IO]) {
   given UUIDGen[IO] = UUIDGen.fromSync
 
   def dualAuth(authenticator: ConnectorAuthenticator)
@@ -69,6 +71,7 @@ case class ConnectorService(repos: Repositories, state: WsState) {
             _ <- repos.dataRequests.set(newReq)
           } yield newReq)
       _ <- data.through(AzureStorage.append(request.dataPath(request.dataIds(co.id)))).compile.drain
+      _ <- logger.info(s"Received main data of ${request.appId}/${request.id} from ${co.appId}/${co.id}")
       _ <- request.tryCallback(repos, co, last)
     } yield ()
 
@@ -80,10 +83,14 @@ case class ConnectorService(repos: Repositories, state: WsState) {
       _ <- AzureStorage.createAppendBlob(request.dataPath(dataId))
       _ <- repos.dataRequests.set(request.withAdditionalDataId(co, dataId))
       _ <- data.through(AzureStorage.append(request.dataPath(dataId))).compile.drain
+      _ <- logger.info(s"Received additional data $dataId of ${request.appId}/${request.id} from ${co.appId}/${co.id}")
     } yield request.dataUrl(dataId)
 }
 
 object ConnectorService {
   def apply(repos: Repositories): IO[ConnectorService] =
-    WsState().map(new ConnectorService(repos, _))
+    for {
+      state <- WsState()
+      logger <- Slf4jLogger.create[IO]
+    } yield new ConnectorService(repos, state, logger)
 }

@@ -22,12 +22,13 @@ class ServerApp {
       ).orNotFound
 
   val server: Resource[IO, Server] =
+    val env = Env.get
     for {
       repos <- Repositories()
-      identityClient <- IdentityClientBuilder().withBaseUri(Env.get.identityUrl).resource
-      services <- Resource.eval(Services(repos, identityClient))
+      identityClient <- IdentityClientBuilder().withBaseUri(env.identityUrl).resource
+      services <- Resource.eval(Services(repos, env, identityClient))
       server <- BlazeServerBuilder[IO]
-        .bindHttp(Env.get.port, Env.get.host)
+        .bindHttp(env.port, env.host)
         .withHttpWebSocketApp(app(services))
         .resource
     } yield server

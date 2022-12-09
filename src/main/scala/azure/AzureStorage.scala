@@ -1,10 +1,11 @@
 package io.blindnet.dataaccess
 package azure
 
+import cats.data.OptionT
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.azure.storage.blob.BlobClientBuilder
-import com.azure.storage.blob.models.AppendBlobRequestConditions
+import com.azure.storage.blob.models.{AppendBlobRequestConditions, BlobErrorCode, BlobStorageException}
 import com.azure.storage.blob.specialized.{BlobInputStream, BlobOutputStream}
 import com.azure.storage.common.StorageSharedKeyCredential
 import fs2.*
@@ -32,8 +33,14 @@ object AzureStorage {
   private def getBlobAppendOutputStream(blobId: String): IO[BlobOutputStream] =
     IO(buildBlobClient(blobId).getAppendBlobClient.getBlobOutputStream)
 
-  private def getBlobInputStream(blobId: String): IO[BlobInputStream] =
-    IO(buildBlobClient(blobId).openInputStream())
+  private def getBlobInputStream(blobId: String): IO[Option[BlobInputStream]] =
+    IO.blocking(Some(buildBlobClient(blobId).openInputStream()))
+      .handleErrorWith {
+        case e: BlobStorageException =>
+          if e.getErrorCode == BlobErrorCode.BLOB_NOT_FOUND then IO.pure(None)
+          else IO.raiseError(e)
+        case e => IO.raiseError(e)
+      }
 
   def createAppendBlob(blobId: String): IO[Unit] =
     IO(buildBlobClient(blobId).getAppendBlobClient.create())
@@ -41,6 +48,8 @@ object AzureStorage {
   def append(blobId: String): Pipe[IO, Byte, Nothing] =
     writeOutputStream(getBlobAppendOutputStream(blobId))
 
-  def download(blobId: String): Stream[IO, Byte] =
-    readInputStream(getBlobInputStream(blobId), 1000)
+  def download(blobId: String): IO[Option[Stream[IO, Byte]]] =
+    OptionT(getBlobInputStream(blobId))
+      .map(is => readInputStream(IO.pure(is), 1000))
+      .value
 }

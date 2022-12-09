@@ -7,6 +7,7 @@ import models.*
 import redis.*
 import ws.packets.out.*
 
+import cats.data.OptionT
 import cats.effect.*
 import cats.effect.std.*
 import fs2.*
@@ -20,5 +21,6 @@ class DataService(repos: Repositories) {
   val dataIdPattern: Regex = "\\.\\w+$".r
 
   def get(appId: UUID, requestId: String, dataId: String): IO[Stream[IO, Byte]] =
-    IO(AzureStorage.download(s"$appId/$requestId/${dataIdPattern.replaceFirstIn(dataId, "")}"))
+    AzureStorage.download(s"$appId/$requestId/${dataIdPattern.replaceFirstIn(dataId, "")}")
+      .flatMap(_.orNotFound)
 }

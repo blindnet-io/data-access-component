@@ -16,7 +16,7 @@ import sttp.tapir.json.circe.*
 import java.util.UUID
 
 class ConfigurationEndpoints(authenticator: JwtAppAuthenticator, service: ConfigurationService) {
-  private val base = authenticator.withBaseEndpoint(endpoint.tag("Configuration").in("configuration")).secureEndpoint
+  private val base = authenticator.secureEndpoint(endpoint.tag("Configuration").in("configuration"))
 
   val getToken: ApiEndpoint =
     base.summary("Get the current API token for this app")

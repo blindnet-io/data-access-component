@@ -1,7 +1,7 @@
 package io.blindnet.dataaccess
 package db
 
-import models.{Connector, CustomConnector}
+import models.{Connector, GlobalConnector, CustomConnector}
 
 import cats.data.NonEmptyList
 import cats.effect.*
@@ -37,8 +37,15 @@ class ConnectorRepository(xa: Transactor[IO]) extends StRepository[CustomConnect
       .query[Connector].to[List].transact(xa)
 
   def insert(co: Connector): IO[Unit] =
-    sql"""insert into connectors (id, app_id, name, type, config, token) values $co"""
-      .update.run.transact(xa).void
+    co match {
+      case GlobalConnector(id, appId, name, typ, config) => 
+        sql"""insert into connectors (id, app_id, name, type, config) values ($id, $appId, $name, $typ, $config)"""
+          .update.run.transact(xa).void
+      case CustomConnector(id, appId, name, token) =>
+        sql"""insert into connectors (id, app_id, name, token) values ($id, $appId, $name, $token)"""
+          .update.run.transact(xa).void
+    }
+    
 
   def updateToken(appId: UUID, id: UUID, token: String): IO[Unit] =
     sql"update connectors set token=$token where app_id=$appId and id=$id"

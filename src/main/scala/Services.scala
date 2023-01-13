@@ -1,7 +1,7 @@
 package io.blindnet.dataaccess
 
 import endpoints.*
-import endpoints.auth.JwtAppAuthenticator
+import endpoints.auth.*
 import errors.ErrorHandler
 import models.App
 import services.*
@@ -26,8 +26,9 @@ class Services(repos: Repositories, env: Env, connectorService: ConnectorService
   private val connectorAuthenticator = StAuthenticator(repos.connectors)
   private val jwtAuthenticator = JwtAuthenticator(identityClient)
   private val jwtAppAuthenticator = JwtAppAuthenticator(repos, configurationService, jwtAuthenticator)
+  private val jwtIdentityAuthenticator = JwtIdentityAuthenticator(repos, configurationService, JwtLocalAuthenticator(env.identityKey))
 
-  private val configurationEndpoints = ConfigurationEndpoints(jwtAppAuthenticator, configurationService)
+  private val configurationEndpoints = ConfigurationEndpoints(jwtAppAuthenticator, jwtIdentityAuthenticator, configurationService)
   private val connectorEndpoints = ConnectorEndpoints(connectorAuthenticator, connectorService)
   private val dataEndpoints = DataEndpoints(dataService)
   private val requestEndpoints = RequestEndpoints(appAuthenticator, requestService)

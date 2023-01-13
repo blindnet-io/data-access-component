@@ -34,6 +34,8 @@ abstract class Env() {
   lazy val azureStorageAccountName: String = sys.env("BN_AZURE_STORAGE_ACC_NAME")
   lazy val azureStorageAccountKey: String = sys.env("BN_AZURE_STORAGE_ACC_KEY")
   lazy val azureStorageContainerName: String = sys.env("BN_AZURE_STORAGE_CONT_NAME")
+
+  lazy val identityKey: String = sys.env("BN_IDENTITY_KEY")
 }
 
 class ProductionEnv() extends Env {

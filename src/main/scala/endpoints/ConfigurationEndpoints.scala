@@ -1,7 +1,7 @@
 package io.blindnet.dataaccess
 package endpoints
 
-import endpoints.auth.JwtAppAuthenticator
+import endpoints.auth.*
 import endpoints.objects.*
 import services.ConfigurationService
 
@@ -15,8 +15,13 @@ import sttp.tapir.json.circe.*
 
 import java.util.UUID
 
-class ConfigurationEndpoints(authenticator: JwtAppAuthenticator, service: ConfigurationService) {
-  private val base = authenticator.withBaseEndpoint(endpoint.tag("Configuration").in("configuration")).secureEndpoint
+class ConfigurationEndpoints(
+  jwtAppAuthenticator: JwtAppAuthenticator,
+  jwtIdentityAuthenticator: JwtIdentityAuthenticator,
+  service: ConfigurationService
+) {
+  private val authenticator = jwtAppAuthenticator.or(jwtIdentityAuthenticator)
+  private val base = authenticator.secureEndpoint(endpoint.tag("Configuration").in("configuration"))
 
   val getToken: ApiEndpoint =
     base.summary("Get the current API token for this app")

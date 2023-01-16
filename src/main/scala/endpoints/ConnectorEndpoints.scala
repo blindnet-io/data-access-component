@@ -15,8 +15,8 @@ import java.util.UUID
 
 class ConnectorEndpoints(authenticator: ConnectorAuthenticator, service: ConnectorService) {
   private val publicBase = endpoint.tag("Connectors").in("connectors")
-  private val customBase = authenticator.withBaseEndpoint(publicBase).secureEndpoint
-  private val globalBase = ConstAuthenticator(Env.get.globalConnectorToken, IO.pure(())).withBaseEndpoint(publicBase).secureEndpoint
+  private val customBase = authenticator.secureEndpoint(publicBase)
+  private val globalBase = ConstAuthenticator(Env.get.globalConnectorToken, IO.pure(())).secureEndpoint(publicBase)
   private val dualBase = publicBase
     .securityIn(header[Option[String]]("Authorization"))
     .securityIn(header[Option[String]]("X-Application-ID"))

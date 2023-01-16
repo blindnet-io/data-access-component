@@ -25,8 +25,8 @@ class Services(repos: Repositories, env: Env, connectorService: ConnectorService
   private val appAuthenticator = StAuthenticator(repos.apps)
   private val connectorAuthenticator = StAuthenticator(repos.connectors)
   private val jwtAuthenticator = JwtAuthenticator(identityClient)
-  private val jwtAppAuthenticator = JwtAppAuthenticator(repos, configurationService, jwtAuthenticator)
-  private val jwtIdentityAuthenticator = JwtIdentityAuthenticator(repos, configurationService, JwtLocalAuthenticator(env.identityKey))
+  private val jwtAppAuthenticator = JwtAppAuthenticator(repos, jwtAuthenticator)
+  private val jwtIdentityAuthenticator = JwtIdentityAuthenticator(repos, JwtLocalAuthenticator(env.identityKey))
 
   private val configurationEndpoints = ConfigurationEndpoints(jwtAppAuthenticator, jwtIdentityAuthenticator, configurationService)
   private val connectorEndpoints = ConnectorEndpoints(connectorAuthenticator, connectorService)

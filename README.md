@@ -39,15 +39,17 @@ The DAC expects a Redis server to be running on 127.0.0.1:6379. This is not conf
 
 Some options can be configured using environment variables:
 
-| Name                       | Description                  | Example                          | Default                  |
-|----------------------------|------------------------------|----------------------------------|:-------------------------|
-| BN_ENV                     | Environment                  | development, staging, production | development              |
-| BN_PORT                    | HTTP port                    | 80                               | 8028                     |
-| BN_HOST                    | HTTP host                    | 0.0.0.0                          | 127.0.0.1                |
-| BN_BASE_URL                | HTTP base URL                | https://dac.example.org          | http://$BN_HOST:$BN_PORT |
-| BN_AZURE_STORAGE_ACC_NAME  | Azure storage account name   |                                  |                          |
-| BN_AZURE_STORAGE_ACC_KEY   | Azure storage account key    |                                  |                          |
-| BN_AZURE_STORAGE_CONT_NAME | Azure storage container name |                                  |                          |
+| Name                       | Description                  | Example                              | Default                  |
+|----------------------------|------------------------------|--------------------------------------|:-------------------------|
+| BN_ENV                     | Environment                  | development, staging, production     | development              |
+| BN_PORT                    | HTTP port                    | 80                                   | 8028                     |
+| BN_HOST                    | HTTP host                    | 0.0.0.0                              | 127.0.0.1                |
+| BN_BASE_URL                | HTTP base URL                | https://dac.example.org              | http://$BN_HOST:$BN_PORT |
+| BN_AZURE_STORAGE_ACC_NAME  | Azure storage account name   |                                      |                          |
+| BN_AZURE_STORAGE_ACC_KEY   | Azure storage account key    |                                      |                          |
+| BN_AZURE_STORAGE_CONT_NAME | Azure storage container name |                                      |                          |
+| BN_IDENTITY_URL            | identity api url             | https://identity.devkit.blindnet.io  |                          |
+| BN_IDENTITY_KEY            | identity api public url      | key                                  |                          |
 
 `development` environment has default fake values for BN_AZURE_* keys.
 

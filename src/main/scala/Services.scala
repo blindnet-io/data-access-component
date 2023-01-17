@@ -25,15 +25,17 @@ class Services(repos: Repositories, env: Env, connectorService: ConnectorService
   private val appAuthenticator = StAuthenticator(repos.apps)
   private val connectorAuthenticator = StAuthenticator(repos.connectors)
   private val jwtAuthenticator = JwtAuthenticator(identityClient)
-  private val jwtAppAuthenticator = JwtAppAuthenticator(repos, configurationService, jwtAuthenticator)
-  private val jwtIdentityAuthenticator = JwtIdentityAuthenticator(repos, configurationService, JwtLocalAuthenticator(env.identityKey))
+  private val jwtAppAuthenticator = JwtAppAuthenticator(repos, jwtAuthenticator)
+  private val jwtIdentityAuthenticator = JwtIdentityAuthenticator(repos, JwtLocalAuthenticator(env.identityKey))
 
+  private val healthEndpoints = HealthCheckEndpoints()
   private val configurationEndpoints = ConfigurationEndpoints(jwtAppAuthenticator, jwtIdentityAuthenticator, configurationService)
   private val connectorEndpoints = ConnectorEndpoints(connectorAuthenticator, connectorService)
   private val dataEndpoints = DataEndpoints(dataService)
   private val requestEndpoints = RequestEndpoints(appAuthenticator, requestService)
 
   private val apiEndpoints = List(
+    healthEndpoints.list,
     configurationEndpoints.list,
     connectorEndpoints.list,
     dataEndpoints.list,

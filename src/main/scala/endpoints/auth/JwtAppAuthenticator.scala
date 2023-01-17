@@ -2,7 +2,6 @@ package io.blindnet.dataaccess
 package endpoints.auth
 
 import models.{App, Connector}
-import services.ConfigurationService
 
 import cats.effect.IO
 import cats.effect.std.UUIDGen
@@ -12,12 +11,15 @@ type JwtAppAuthenticator = JwtAuthenticator[App]
 
 object JwtAppAuthenticator {
 
-  def apply(repos: Repositories, configurationService: ConfigurationService, authenticator: JwtAuthenticator[Jwt]): JwtAppAuthenticator =
+  def apply(
+    repos: Repositories,
+    authenticator: JwtAuthenticator[Jwt]
+  ): JwtAppAuthenticator =
     authenticator.requireAppJwt.mapJwtF(jwt =>
       repos.apps.findById(jwt.appId).flatMap(_ match
         case Some(app) => IO.pure(app)
         case None => for {
-          appToken <- configurationService.generateStaticToken()
+          appToken <- generateStaticToken()
           app = App(jwt.appId, appToken)
           _ <- repos.apps.insert(app)
         } yield app))

@@ -9,13 +9,9 @@ import cats.effect.*
 import cats.effect.std.UUIDGen
 
 import java.util.UUID
-import scala.util.Random
 
 class ConfigurationService(repos: Repositories) {
   val uuidGen: UUIDGen[IO] = UUIDGen.fromSync
-
-  def generateStaticToken(): IO[String] =
-    IO(Random.alphanumeric.take(128).mkString)
 
   def getToken(app: App)(x: Unit): IO[String] =
     IO.pure(app.token)
